@@ -233,6 +233,11 @@ docker compose run --rm -v $(pwd):/frontend frontend sh -c "npm install PACKAGE"
 docker compose run --rm -v "$(PWD):/frontend" frontend sh -c "npm install PACKAGE"
 ```
 
+**ART Note:** instead of command above use this:
+
+```
+docker compose run --rm -v %cd%:/frontend -w /frontend frontend sh -c "cd frontend/ && npm install leaflet"
+```
 This runs a command through our configured frontend service, which will install the package and update package-lock.json. The -v $(pwd):/frontend ensures that a volume is mapped, which (unlike the watch config) ensures two way syncing is possible. This allows the package-lock.json in our project to be updated by the command running inside Docker.
 
 2) After you run this, you’ll need to rebuild the container again.
