@@ -4,6 +4,9 @@ import viteLogo from './assets/vite.svg';
 import heroImg from './assets/hero.png';
 import './App.css';
 
+import { MapContainer, TileLayer, GeoJSON } from "react-leaflet"
+import 'leaflet/dist/leaflet.css';
+
 function App() {
   const [count, setCount] = useState(0)
   const [response, setResponse] = useState("");
@@ -39,6 +42,10 @@ function App() {
           onClick={() => setCount((count) => count + 1)}>      
             Count is {count}
         </button>
+        <MapContainer center={[0, 0]} zoom={2} style={{ height: "100vh" }}>
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          {/* <GeoJSON data={data} /> */}
+        </MapContainer>
       </section>
 
       <div className="ticks"></div>
