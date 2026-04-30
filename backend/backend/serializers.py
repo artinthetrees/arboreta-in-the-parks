@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from backend.models import CommunityArea, RestaurantPermit
+#from .models import CommunityArea, RestaurantPermit
 
 class CommunityAreaSerializer(serializers.ModelSerializer):
     class Meta:
