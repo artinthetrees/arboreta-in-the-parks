@@ -4,7 +4,7 @@ from datetime import datetime
 from django.contrib.gis.geos.error import GEOSException
 from django.core.management.base import BaseCommand
 
-from map.models import RestaurantPermit, CommunityArea
+from backend.models import RestaurantPermit, CommunityArea
 
 
 class Command(BaseCommand):

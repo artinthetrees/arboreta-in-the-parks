@@ -2,7 +2,7 @@ import json
 
 from django.core.management.base import BaseCommand
 
-from map.models import CommunityArea
+from backend.models import CommunityArea
 
 
 class Command(BaseCommand):
