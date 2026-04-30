@@ -2,6 +2,12 @@ FROM python:3.13.0-alpine3.20
 
 ENV PYTHONUNBUFFERED=1
 
+RUN apt-get update && \
+	apt-get install -y --no-install-recommends --purge postgresql-client gdal-bin && \
+	apt-get autoclean && \
+	rm -rf /var/lib/apt/lists/* && \
+	rm -rf /tmp/*
+
 COPY ./requirements.txt /requirements.txt
 COPY ./data /data
 COPY ./backend /backend
