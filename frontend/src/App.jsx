@@ -7,6 +7,9 @@ import './App.css';
 import { MapContainer, TileLayer, GeoJSON } from "react-leaflet"
 import 'leaflet/dist/leaflet.css';
 
+import RAW_COMMUNITY_AREAS from "../data/raw/community-areas.geojson?raw"
+const COMMUNITY_AREAS = JSON.parse(RAW_COMMUNITY_AREAS);
+
 function App() {
   const [count, setCount] = useState(0)
   const [response, setResponse] = useState("");
@@ -55,11 +58,11 @@ function App() {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png"
           />
-          {/* <GeoJSON 
-            data={RAW_COMMUNITY_AREAS} 
-            onEachFeature={setAreaInteraction}
-            key={maxPermits}
-          /> */}
+          <GeoJSON 
+            data={COMMUNITY_AREAS} 
+            // onEachFeature={setAreaInteraction}
+            // key={maxPermits}
+          />
           {/* {currentYearData.length > 0 ? (
             <GeoJSON
               data={RAW_COMMUNITY_AREAS}
