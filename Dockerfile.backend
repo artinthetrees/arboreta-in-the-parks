@@ -1,5 +1,5 @@
 #FROM python:3.13.0-alpine3.20
-FROM python:3.14.3 
+FROM python:3.13 
 
 ENV PYTHONUNBUFFERED=1
 
@@ -10,8 +10,8 @@ RUN apt-get update && \
 	rm -rf /tmp/*
 
 COPY ./requirements.txt /requirements.txt
-COPY ./data /data
 COPY ./backend /backend
+COPY ./data /backend/data
 WORKDIR /backend
 
 RUN python -m venv env /py && \
