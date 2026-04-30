@@ -2,6 +2,7 @@ FROM node:25-slim
 
 COPY ./frontend /frontend
 RUN rm -rf /frontend/node_modules
+COPY ./data /frontend/data
 
 WORKDIR /frontend
 RUN npm ci
