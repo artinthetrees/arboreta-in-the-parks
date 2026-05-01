@@ -7,6 +7,9 @@ import './App.css';
 import { MapContainer, TileLayer, GeoJSON } from "react-leaflet"
 import 'leaflet/dist/leaflet.css';
 
+import RAW_COMMUNITY_AREAS from "../data/raw/community-areas.geojson?raw"
+const COMMUNITY_AREAS = JSON.parse(RAW_COMMUNITY_AREAS);
+
 function App() {
   const [count, setCount] = useState(0)
   const [response, setResponse] = useState("");
@@ -42,9 +45,31 @@ function App() {
           onClick={() => setCount((count) => count + 1)}>      
             Count is {count}
         </button>
-        <MapContainer center={[0, 0]} zoom={2} style={{ height: "100vh" }}>
+{/*         <MapContainer center={[0, 0]} zoom={2} style={{ height: "100vh" }}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           {/* <GeoJSON data={data} /> */}
+{/*        </MapContainer> */}
+        <MapContainer
+          id="restaurant-map"
+          center={[41.88, -87.62]}
+          zoom={10}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png"
+          />
+          <GeoJSON 
+            data={COMMUNITY_AREAS} 
+            // onEachFeature={setAreaInteraction}
+            // key={maxPermits}
+          />
+          {/* {currentYearData.length > 0 ? (
+            <GeoJSON
+              data={RAW_COMMUNITY_AREAS}
+              onEachFeature={setAreaInteraction}
+              key={maxPermits}
+            />
+          ) : null} */}
         </MapContainer>
       </section>
 

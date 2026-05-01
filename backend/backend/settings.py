@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,16 +32,18 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
-
 INSTALLED_APPS = [
+    'django.contrib.gis',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "django.contrib.postgres",
     'corsheaders',
-    'rest_framework'
+    'rest_framework',
+    'backend'
 ]
 
 MIDDLEWARE = [
@@ -78,11 +83,25 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': BASE_DIR / 'db.postgis',
     }
 }
 
+# Database
+# https://docs.djangoproject.com/en/stable/ref/settings/#databases
+
+DATABASES = {}
+
+
+DATABASES["default"] = dj_database_url.parse(
+    os.getenv("DATABASE_URL", "postgres://postgres:postgres@postgres:5432/backend"),
+    conn_max_age=600,
+    ssl_require=os.getenv("POSTGRES_REQUIRE_SSL",False),
+    engine="django.db.backends.postgresql",
+)
+
+DATABASES["default"]["ENGINE"] = "django.contrib.gis.db.backends.postgis"
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

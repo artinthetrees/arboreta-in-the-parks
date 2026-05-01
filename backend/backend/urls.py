@@ -17,9 +17,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from backend.views import hello_world
+from backend.views import hello_world, MapDataView
 
 urlpatterns = [
+    path("map-data/", MapDataView.as_view(), name="map_data"),
     path('api/hello-world/', hello_world),
     path('admin/', admin.site.urls),
 ]
