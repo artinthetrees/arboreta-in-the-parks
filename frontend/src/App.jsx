@@ -123,6 +123,32 @@ function App() {
 
   }
 
+  // define a fx that will run for each ca feature in the ca geojson to get the data 
+  // stored for that ca in the ca backend model/db and use that data to display 
+  // information specific to each ca on the frontend
+  function setAreaInteraction(feature, layer) {
+    
+    const ca_name = feature?.properties?.community || "Unknown";
+    const ca_model_data = currentYearData.find(ca_entry => ca_entry.name === ca_name);
+    
+    const ca_model_data_str = JSON.stringify(ca_model_data, null, 2)
+    const ca_num_permits_str = ca_model_data.num_permits.toString()
+    
+    let pop_up_str = `${ca_name}<br>Permits: ${ca_num_permits_str}`;
+    let ca_color = getColor(ca_model_data.percent_permits)
+    
+    layer.setStyle({
+      fillColor: ca_color, // Fill color based on quartile of permits issued
+      fillOpacity: 0.5,    // Semi-transparent
+      color: '#000000',    // Border color
+      weight: 2            // Border weight
+    })
+    layer.on("mouseover", () => {
+      layer.bindPopup(pop_up_str)
+      layer.openPopup()
+    })
+  }
+
   return (
     <>
       <section id="center">
@@ -151,18 +177,13 @@ function App() {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png"
           />
-          <GeoJSON 
-            data={COMMUNITY_AREAS} 
-            // onEachFeature={setAreaInteraction}
-            // key={maxPermits}
-          />
-          {/* {currentYearData.length > 0 ? (
+          {currentYearData.length > 0 ? (
             <GeoJSON
-              data={RAW_COMMUNITY_AREAS}
+              data={COMMUNITY_AREAS}
               onEachFeature={setAreaInteraction}
-              key={maxPermits}
+              key={testyearlyDataEndpoint}
             />
-          ) : null} */}
+          ) : null}
         </MapContainer>
       </section>
 
