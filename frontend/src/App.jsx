@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react"
 import reactLogo from './assets/react.svg';
 import viteLogo from './assets/vite.svg';
 import heroImg from './assets/hero.png';
+import sandyStream from './assets/sandystream.png'
 import './App.css';
 
 import { MapContainer, TileLayer, GeoJSON } from "react-leaflet"
@@ -72,15 +73,10 @@ function App() {
     <>
       <section id="center">
         <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+          <img src={sandyStream} className="base" width="170" height="170" alt="" />
         </div>
         <div>
-          <h1>Get started - woohoo!</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
+          <h1>Let's explore!</h1>
         </div>
         <YearSelect filterVal={year} setFilterVal={setYear} />
         <div>
