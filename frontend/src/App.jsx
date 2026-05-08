@@ -10,6 +10,36 @@ import 'leaflet/dist/leaflet.css';
 import RAW_COMMUNITY_AREAS from "../data/raw/community-areas.geojson?raw"
 const COMMUNITY_AREAS = JSON.parse(RAW_COMMUNITY_AREAS);
 
+function YearSelect({ setFilterVal }) {
+  // Filter by the permit issue year for each restaurant
+  const startYear = 2026
+  const years = [...Array(11).keys()].map((increment) => {
+    return startYear - increment
+  })
+  const options = years.map((year) => {
+    return (
+      <option value={year} key={year}>
+        {year}
+      </option>
+    )
+  })
+
+  return (
+    <>
+      <label htmlFor="yearSelect" className="fs-3">
+        Filter by year:{" "}
+      </label>
+      <select
+        id="yearSelect"
+        className="form-select form-select-lg mb-3"
+        onChange={(e) => setFilterVal(e.target.value)}
+      >
+        {options}
+      </select>
+    </>
+  )
+}
+
 function App() {
   const [count, setCount] = useState(0)
   const [response, setResponse] = useState("");
