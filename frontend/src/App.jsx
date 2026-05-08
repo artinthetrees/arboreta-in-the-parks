@@ -68,13 +68,6 @@ function App() {
   //   console.log('Updated State:', currentYearData);
   // }, [currentYearData]);
 
-  // define async fx that will run on click of a button
-  const updateResponse = async () => {
-    const res = await fetch("http://localhost:8000/api/hello-world/");
-    const data = await res.json();
-    setResponse(data["message"]);
-  };
-
   return (
     <>
       <section id="center">
@@ -89,21 +82,6 @@ function App() {
             Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
           </p>
         </div>
-        <button 
-          type="button"
-          onClick={() => updateResponse()}>
-            response is: {response}
-        </button>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}>      
-            Count is {count}
-        </button>
-{/*         <MapContainer center={[0, 0]} zoom={2} style={{ height: "100vh" }}>
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {/* <GeoJSON data={data} /> */}
-{/*        </MapContainer> */}
         <YearSelect filterVal={year} setFilterVal={setYear} />
         <div>
           <h1>Year is {year}</h1>
