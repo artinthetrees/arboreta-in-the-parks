@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useEffect, useState } from "react"
 import reactLogo from './assets/react.svg';
 import viteLogo from './assets/vite.svg';
 import heroImg from './assets/hero.png';
@@ -47,7 +47,29 @@ function App() {
   const [year, setYear] = useState(2026)
   const [currentYearData, setCurrentYearData] = useState([])
   const yearlyDataEndpoint = `/map-data/?year=${year}`
+  const testyearlyDataEndpoint = `http://localhost:8000/map-data/?year=${year}`
 
+  // set up a useEffect hook to run a fetch of currentYearData any time the yearlyDataEndpoint const changes
+  useEffect(() => {
+    fetch(testyearlyDataEndpoint)
+      .then((res) => {
+        console.log('Status:', res.status);
+        console.log('res:', res);
+        return res.json()
+      })  
+      .then((data) => {
+        console.log('Data:', data);
+        setCurrentYearData(data);
+      })
+      .catch(error => console.error('Error:', error)); // Log errors
+  }, [testyearlyDataEndpoint])
+
+  // set up a useEffect hook to print currentYearData to console any time currentYearData const changes - just for testing
+  useEffect(() => {
+    console.log('Updated State:', currentYearData);
+  }, [currentYearData]);
+
+  // define async fx that will run on click of a button
   const updateResponse = async () => {
     const res = await fetch("http://localhost:8000/api/hello-world/");
     const data = await res.json();
