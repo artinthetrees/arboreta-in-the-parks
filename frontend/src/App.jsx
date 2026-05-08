@@ -105,6 +105,24 @@ function App() {
   const permitPercentQuartiles = getQuartiles(currentYearData,'percent_permits')
   console.log('Percent Permits Quartiles:', permitPercentQuartiles);
 
+  // define a fx that determines which quartile of num/percent of permits a ca is in 
+  // and assigns it a color based on its quartile
+  function getColor(percentageOfPermits) {
+    
+    const communityAreaColors = ["#eff3ff", "#bdd7e7", "#6baed6", "#2171b5"]
+
+    if (percentageOfPermits <= permitPercentQuartiles.q1) {
+      return communityAreaColors[0];
+    } else if (percentageOfPermits <= permitPercentQuartiles.q2) {
+      return communityAreaColors[1];
+    } else if (percentageOfPermits <= permitPercentQuartiles.q3) {
+      return communityAreaColors[2];
+    } else {
+      return communityAreaColors[3];
+    }
+
+  }
+
   return (
     <>
       <section id="center">
