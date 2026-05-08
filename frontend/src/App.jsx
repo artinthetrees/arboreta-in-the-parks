@@ -82,6 +82,9 @@ function App() {
           {/* <GeoJSON data={data} /> */}
 {/*        </MapContainer> */}
         <YearSelect filterVal={year} setFilterVal={setYear} />
+        <div>
+          <h1>Year is {year}</h1>
+        </div>
         <MapContainer
           id="restaurant-map"
           center={[41.88, -87.62]}
