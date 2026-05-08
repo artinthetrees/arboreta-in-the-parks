@@ -115,9 +115,15 @@ function App() {
           <h1>Let's explore!</h1>
         </div>
         <YearSelect filterVal={year} setFilterVal={setYear} />
-        <div>
+        {/* <div>
           <h1>Year is {year}</h1>
-        </div>
+        </div> */}
+        <p className="fs-4">
+          <b>Restaurant permits issued this year:</b> { totalPermits }
+        </p>
+        <p className="fs-4">
+          <b>Maximum number of restaurant permits issued in a single community area:</b> { maxPermits }
+        </p>
         <MapContainer
           id="restaurant-map"
           center={[41.88, -87.62]}
