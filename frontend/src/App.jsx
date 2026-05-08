@@ -69,6 +69,42 @@ function App() {
   //   console.log('Updated State:', currentYearData);
   // }, [currentYearData]);
 
+  // Get total number of permits across all community areas in the selected year
+  const totalPermits = currentYearData.reduce((accumulator, currentItem) => {
+    return accumulator + currentItem.num_permits;
+  }, 0); // 0 is the initialValue
+  console.log('Total Permits:', totalPermits); 
+
+  // Get max number of permits in a single community area in the selected year
+  const maxPermits = Math.max(...currentYearData.map(item => item.num_permits));
+  console.log('Max Permits:', maxPermits); 
+
+  // Get quartiles of percent permits 
+  const getQuartiles = (arr, key) => {
+    // 1. Extract key values from each dictionary in array of dictionaries and sort values numerically
+    const values = arr.map(item => item[key]).sort((a, b) => a - b);
+    
+    const quantile = (sortedArr, q) => {
+      const pos = (sortedArr.length - 1) * q;
+      const base = Math.floor(pos);
+      const rest = pos - base;
+      if (sortedArr[base + 1] !== undefined) {
+        return sortedArr[base] + rest * (sortedArr[base + 1] - sortedArr[base]);
+      } else {
+        return sortedArr[base];
+      }
+    };
+
+    return {
+      "q1": quantile(values, 0.25),
+      "q2": quantile(values, 0.50), // Median
+      "q3": quantile(values, 0.75)
+    };
+  };
+
+  const permitPercentQuartiles = getQuartiles(currentYearData,'percent_permits')
+  console.log('Percent Permits Quartiles:', permitPercentQuartiles);
+
   return (
     <>
       <section id="center">
