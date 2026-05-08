@@ -54,7 +54,6 @@ function App() {
     fetch(testyearlyDataEndpoint)
       .then((res) => {
         console.log('Status:', res.status);
-        console.log('res:', res);
         return res.json()
       })  
       .then((data) => {
@@ -65,9 +64,9 @@ function App() {
   }, [testyearlyDataEndpoint])
 
   // set up a useEffect hook to print currentYearData to console any time currentYearData const changes - just for testing
-  useEffect(() => {
-    console.log('Updated State:', currentYearData);
-  }, [currentYearData]);
+  // useEffect(() => {
+  //   console.log('Updated State:', currentYearData);
+  // }, [currentYearData]);
 
   // define async fx that will run on click of a button
   const updateResponse = async () => {
