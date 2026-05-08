@@ -43,6 +43,8 @@ function YearSelect({ setFilterVal }) {
 function App() {
   const [count, setCount] = useState(0)
   const [response, setResponse] = useState("");
+  
+  const [year, setYear] = useState(2026)
 
   const updateResponse = async () => {
     const res = await fetch("http://localhost:8000/api/hello-world/");
@@ -79,6 +81,7 @@ function App() {
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           {/* <GeoJSON data={data} /> */}
 {/*        </MapContainer> */}
+        <YearSelect filterVal={year} setFilterVal={setYear} />
         <MapContainer
           id="restaurant-map"
           center={[41.88, -87.62]}
