@@ -45,6 +45,8 @@ function App() {
   const [response, setResponse] = useState("");
   
   const [year, setYear] = useState(2026)
+  const [currentYearData, setCurrentYearData] = useState([])
+  const yearlyDataEndpoint = `/map-data/?year=${year}`
 
   const updateResponse = async () => {
     const res = await fetch("http://localhost:8000/api/hello-world/");
