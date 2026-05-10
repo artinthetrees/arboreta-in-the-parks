@@ -195,18 +195,18 @@ function App() {
             <use href="/icons.svg#documentation-icon"></use>
           </svg>
           <h2>Documentation</h2>
-          <p>Your questions, answered</p>
+          <p>Find code for this project here:</p>
           <ul>
             <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
+              <a href="https://github.com/artinthetrees/test" target="_blank">
+                <svg
+                  className="button-icon"
+                  role="presentation"
+                  aria-hidden="true"
+                >
+                  <use href="/icons.svg#github-icon"></use>
+                </svg>
+                GitHub repo for this project
               </a>
             </li>
           </ul>
@@ -216,6 +216,7 @@ function App() {
             <use href="/icons.svg#social-icon"></use>
           </svg>
           <h2>Connect with me</h2>
+          <p>Find me here:</p>
           <ul>
             <li>
               <a href="https://github.com/artinthetrees" target="_blank">
@@ -227,6 +228,18 @@ function App() {
                   <use href="/icons.svg#github-icon"></use>
                 </svg>
                 GitHub
+              </a>
+            </li>
+            <li>
+              <a href="https://www.linkedin.com/in/andreatentner/" target="_blank">
+                <svg
+                  className="button-icon"
+                  role="presentation"
+                  aria-hidden="true"
+                >
+                  <use href="/icons.svg#linkedin-icon"></use>
+                </svg>
+                LinkedIn
               </a>
             </li>
           </ul>
