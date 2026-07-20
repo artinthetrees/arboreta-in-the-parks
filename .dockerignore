@@ -1,4 +1,14 @@
 **/.git
-README.md
-TUTORIAL.md
+
+#README.md
+#TUTORIAL.md
+#TUTORIAL2.md
+
+#env
+**/.env
+
+#Dockerfile.backend
+
+#Dockerfile.frontend
 frontend/node_modules/
+frontend/npm-debug.log
