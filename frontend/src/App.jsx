@@ -5,7 +5,7 @@ import heroImg from './assets/hero.png';
 import sandyStream from './assets/sandystream.png'
 import './App.css';
 
-import { MapContainer, TileLayer, GeoJSON } from "react-leaflet"
+import { MapContainer, TileLayer, LayersControl, GeoJSON } from "react-leaflet"
 import 'leaflet/dist/leaflet.css';
 
 import RAW_COMMUNITY_AREAS from "../data/raw/community-areas.geojson?raw"
@@ -173,10 +173,35 @@ function App() {
           center={[41.88, -87.62]}
           zoom={10}
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png"
-          />
+          <LayersControl position="topright">
+        
+            {/* Default Base Map */}
+            <LayersControl.BaseLayer checked name="OpenStreetMap">
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png"
+              />
+            </LayersControl.BaseLayer>
+
+            {/* Base Layer: Esri Satellite */}
+            <LayersControl.BaseLayer name="Satellite (Esri)">
+              <TileLayer
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+              />
+            </LayersControl.BaseLayer>
+
+            {/* Alternative Base Map */}
+            <LayersControl.BaseLayer name="CartoDB Light">
+              <TileLayer
+                attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
+                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                subdomains='abcd'
+              />
+            </LayersControl.BaseLayer>
+
+          </LayersControl>
+          
           {currentYearData.length > 0 ? (
             <GeoJSON
               data={COMMUNITY_AREAS}
