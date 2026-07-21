@@ -1,7 +1,12 @@
 from rest_framework import serializers
 
-from backend.models import CommunityArea, RestaurantPermit
+from backend.models import CommunityArea, RestaurantPermit, Tree
 #from .models import CommunityArea, RestaurantPermit
+
+class TreeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tree
+        fields = '__all__'  # Or specify list of fields like ['id', 'name']
 
 class CommunityAreaSerializer(serializers.ModelSerializer):
     class Meta:
