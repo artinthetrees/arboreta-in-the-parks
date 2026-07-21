@@ -200,15 +200,17 @@ function App() {
               />
             </LayersControl.BaseLayer>
 
+            <LayersControl.Overlay checked name="CA with counts">
+              {currentYearData.length > 0 ? (
+                <GeoJSON
+                  data={COMMUNITY_AREAS}
+                  onEachFeature={setAreaInteraction}
+                  key={testyearlyDataEndpoint}
+                />
+              ) : null}
+            </LayersControl.Overlay>
+
           </LayersControl>
-          
-          {currentYearData.length > 0 ? (
-            <GeoJSON
-              data={COMMUNITY_AREAS}
-              onEachFeature={setAreaInteraction}
-              key={testyearlyDataEndpoint}
-            />
-          ) : null}
         </MapContainer>
       </section>
 
