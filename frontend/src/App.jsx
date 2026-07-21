@@ -49,6 +49,9 @@ function App() {
   const [currentYearData, setCurrentYearData] = useState([])
   const yearlyDataEndpoint = `/map-data/?year=${year}`
   const testyearlyDataEndpoint = `http://localhost:8000/map-data/?year=${year}`
+  
+  const [treeData, setTreeData] = useState([])
+  const treeDataEndpoint = `http://localhost:8000/trees`
 
   // set up a useEffect hook to run a fetch of currentYearData any time the yearlyDataEndpoint const changes
   useEffect(() => {
@@ -68,6 +71,22 @@ function App() {
   // useEffect(() => {
   //   console.log('Updated State:', currentYearData);
   // }, [currentYearData]);
+
+  useEffect(() => {
+    fetch(treeDataEndpoint)
+      .then((res) => {
+        console.log('Status:', res.status);
+        return res.json()
+      })  
+      .then((data) => {
+        // console.log('Data:', data);
+        setTreeData(data);
+      })
+      .catch(error => console.error('Error:', error)); // Log errors
+  }, [treeDataEndpoint])
+
+  const totalTrees = treeData.length
+  console.log('Total Trees:', totalTrees); 
 
   // Get total number of permits across all community areas in the selected year
   const totalPermits = currentYearData.reduce((accumulator, currentItem) => {
