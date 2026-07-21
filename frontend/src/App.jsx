@@ -5,8 +5,18 @@ import heroImg from './assets/hero.png';
 import sandyStream from './assets/sandystream.png'
 import './App.css';
 
-import { MapContainer, TileLayer, LayersControl, GeoJSON } from "react-leaflet"
+import { MapContainer, TileLayer, LayersControl, Marker, Popup, GeoJSON } from "react-leaflet"
 import 'leaflet/dist/leaflet.css';
+
+import L from 'leaflet';
+
+// Fix for missing default marker icons in Vite/Webpack bundlers
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cloudflare.com',
+  iconUrl: 'https://cloudflare.com',
+  shadowUrl: 'https://cloudflare.com',
+});
 
 import RAW_COMMUNITY_AREAS from "../data/raw/community-areas.geojson?raw"
 const COMMUNITY_AREAS = JSON.parse(RAW_COMMUNITY_AREAS);
@@ -228,6 +238,19 @@ function App() {
                 />
               ) : null}
             </LayersControl.Overlay>
+
+            {/* <LayersControl.Overlay checked name="trees">  
+              {treeData.map((item) => {
+                // GeoJSON standard is [lng, lat], Leaflet needs [lat, lng]. Reverse if required:
+                const position = [item.geom[1], item.geom[0]]; 
+
+                return (
+                  <Marker key={item.id} position={position}>
+                    <Popup>{item.common_name}</Popup>
+                  </Marker>
+                );
+              })}
+            </LayersControl.Overlay> */}
 
           </LayersControl>
         </MapContainer>
