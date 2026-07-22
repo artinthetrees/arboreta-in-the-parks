@@ -9,6 +9,14 @@ class CommunityArea(models.Model):
     def __str__(self):
         return self.name.title()
 
+class Park(models.Model):
+    name = models.CharField(null=True, blank=True)
+    park_id = models.IntegerField(null=False, blank=True, primary_key=True, default=999)
+    geom = gis_models.MultiPolygonField(null=True,blank=True)
+
+    def __str__(self):
+        return self.name.title()
+    
 class Tree(models.Model):
     tree_primary_id = models.CharField(null=False, blank=True)
     tree_id = models.CharField(null=False, blank=True)
