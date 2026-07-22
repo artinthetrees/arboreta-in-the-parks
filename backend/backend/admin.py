@@ -1,5 +1,5 @@
 from django.contrib import admin
-from backend.models import CommunityArea,RestaurantPermit,Tree
+from backend.models import CommunityArea,RestaurantPermit,Tree,Park
 
 @admin.register(CommunityArea)
 class CommunityAreaAdmin(admin.ModelAdmin):
@@ -14,5 +14,10 @@ class RestaurantPermitAdmin(admin.ModelAdmin):
 class TreeAdmin(admin.ModelAdmin):
     list_display = ('tree_id', 'geom', 'status','family','genus','common_name','dbh_range','crown_condition','added_date','modified_date')
     list_filter = ('status','family','genus','crown_condition','modified_year')
+
+@admin.register(Park)
+class ParkAdmin(admin.ModelAdmin):
+    list_display = ('name','park_id', 'geom')
+    #list_filter = ('name')
 
 
