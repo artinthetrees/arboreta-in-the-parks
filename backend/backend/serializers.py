@@ -1,12 +1,46 @@
 from rest_framework import serializers
+from rest_framework_gis.serializers import GeoFeatureModelSerializer
+
+from rest_framework_gis.fields import GeometryField
 
 from backend.models import CommunityArea, RestaurantPermit, Tree
 #from .models import CommunityArea, RestaurantPermit
 
-class TreeSerializer(serializers.ModelSerializer):
+# class TreeSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Tree
+#         fields = '__all__'  # Or specify list of fields like ['id', 'name']
+
+# class TreeSerializer(GeoFeatureModelSerializer):
+#     class Meta:
+#         model = Tree
+#         geo_field = "geom"  # Your PointField name
+#         fields = ("id", "status","common_name","dbh_range","crown_condition")
+
+class TreeGFDRFSerializer(GeoFeatureModelSerializer):
+    """ A class to serialize locations as GeoJSON compatible data """
+
     class Meta:
         model = Tree
-        fields = '__all__'  # Or specify list of fields like ['id', 'name']
+        geo_field = "geom"
+
+        # you can also explicitly declare which fields you want to include
+        # as with a ModelSerializer.
+        fields = ("id", "status","common_name","dbh_range","crown_condition")
+
+class TreeDRFSerializer(serializers.ModelSerializer):
+    geom = GeometryField(precision=8)
+    
+    class Meta:
+        model = Tree
+        fields = [
+            "id",
+            "status",
+            "common_name",
+            "dbh_range",
+            "crown_condition",
+            "geom",
+        ]
 
 class CommunityAreaSerializer(serializers.ModelSerializer):
     class Meta:

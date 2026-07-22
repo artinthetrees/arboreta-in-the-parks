@@ -5,18 +5,68 @@ import heroImg from './assets/hero.png';
 import sandyStream from './assets/sandystream.png'
 import './App.css';
 
-import { MapContainer, TileLayer, LayersControl, Marker, Popup, GeoJSON } from "react-leaflet"
+import { MapContainer, TileLayer, LayersControl, Marker, Popup, useMap, useMapEvents, GeoJSON } from "react-leaflet"
 import 'leaflet/dist/leaflet.css';
 
-import L from 'leaflet';
+// import L from 'leaflet';
 
-// Fix for missing default marker icons in Vite/Webpack bundlers
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cloudflare.com',
-  iconUrl: 'https://cloudflare.com',
-  shadowUrl: 'https://cloudflare.com',
-});
+// // Fix for missing default marker icons in Vite/Webpack bundlers
+// delete L.Icon.Default.prototype._getIconUrl;
+// L.Icon.Default.mergeOptions({
+//   iconRetinaUrl: 'https://cloudflare.com',
+//   iconUrl: 'https://cloudflare.com',
+//   shadowUrl: 'https://cloudflare.com',
+// });
+
+// 1. Create a child component inside MapContainer
+function ZoomTracker({mapInitialZoom}) {
+  const [zoomLevel, setZoomLevel] = useState(mapInitialZoom); // initial zoom
+
+  const map = useMapEvents({
+    zoomend: () => {
+      setZoomLevel(map.getZoom()); // Get current zoom level
+    },
+  });
+
+  return (
+    <div style={{
+      position: 'absolute', 
+      top: 10, 
+      left: 50, 
+      zIndex: 1000, 
+      background: 'white', 
+      padding: '5px' 
+    }}>
+      Current Zoom: {zoomLevel}
+    </div>
+  );
+}
+
+// Helper component to change view dynamically
+function ZoomToPoint({ center, zoom }) {
+  const map = useMap();
+  useEffect(() => {
+    map.flyTo(center, zoom);
+  }, [center, zoom, map]);
+  return null;
+}
+
+function ChangeView({ center, zoom }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, zoom);
+  }, [center, zoom, map]);
+  return null;
+}
+
+// // Helper function to parse "SRID=4326;POINT (-87.68041725 42.01415837)"
+// function parseGeoDjangoPoint(geomStr) {
+//   const match = geomStr.match(/POINT\s*\(\s*([-\d.]+)\s+([-\d.]+)\s*\)/i);
+//   if (!match) return null;
+//   const lng = parseFloat(match[1]);
+//   const lat = parseFloat(match[2]);
+//   return [lat, lng]; // Leaflet expects [lat, lng]
+// }
 
 import RAW_COMMUNITY_AREAS from "../data/raw/community-areas.geojson?raw"
 const COMMUNITY_AREAS = JSON.parse(RAW_COMMUNITY_AREAS);
@@ -63,6 +113,9 @@ function App() {
   const [treeData, setTreeData] = useState([])
   const treeDataEndpoint = `http://localhost:8000/trees`
 
+  const mapInitialCenter = [41.88, -87.62]
+  const mapInitialZoom = 10
+
   // set up a useEffect hook to run a fetch of currentYearData any time the yearlyDataEndpoint const changes
   useEffect(() => {
     fetch(testyearlyDataEndpoint)
@@ -93,10 +146,27 @@ function App() {
         setTreeData(data);
       })
       .catch(error => console.error('Error:', error)); // Log errors
-  }, [treeDataEndpoint])
+  }, [])
 
-  const totalTrees = treeData.length
-  console.log('Total Trees:', totalTrees); 
+  // const treeDataFeatures = treeData?.features  
+  // console.log("Checking type of treeData: ")  
+  // console.log(treeData instanceof Array); // true
+  // console.log(treeData instanceof Object); // true
+  // console.log("Checking type of treeData features: ")  
+  // console.log(treeDataFeatures instanceof Array); // true
+  // console.log(treeDataFeatures instanceof Object); // true
+  // const totalTrees = treeData?.features?.length
+  // console.log('Total Trees:', totalTrees); 
+  // const firstTree = treeData?.features[0]
+  // console.log('First Tree:', firstTree);
+  // const treePosition = treeData?.features[0]?.geometry?.coordinates
+  // const treePositionZoom = 15
+
+  // Single point geometry [latitude, longitude]
+  const treePosition = [41.9391, -87.7023]; // Avondale, Chicago, IL
+  const treeZoomLevel = 15;
+
+  
 
   // Get total number of permits across all community areas in the selected year
   const totalPermits = currentYearData.reduce((accumulator, currentItem) => {
@@ -199,8 +269,8 @@ function App() {
         </p>
         <MapContainer
           id="restaurant-map"
-          center={[41.88, -87.62]}
-          zoom={10}
+          center={mapInitialCenter}
+          zoom={mapInitialZoom}
         >
           <LayersControl position="topright">
         
@@ -238,6 +308,30 @@ function App() {
                 />
               ) : null}
             </LayersControl.Overlay>
+
+            <ChangeView center={treePosition} zoom={treeZoomLevel} />
+            <Marker position={treePosition}>
+              <Popup>Target Location</Popup>
+            </Marker>
+
+            <ZoomTracker mapInitialZoom={mapInitialZoom}/>
+
+{/*             
+              <Marker position={treePosition}>
+                <Popup>Selected Point Geometry</Popup>
+              </Marker>
+              <ZoomToPoint center={treePosition} zoom={treePositionZoom} /> */}
+            
+            {/* {treeData && (
+              <GeoJSON 
+                data={treeData} 
+                onEachFeature={(feature, layer) => {
+                  if (feature.properties && feature.properties.status) {
+                    layer.bindPopup(`<b>${feature.properties.status}</b><br/>${feature.properties.common_name}`);
+                  }
+                }}
+              />
+            )}   */}
 
             {/* <LayersControl.Overlay checked name="trees">  
               {treeData.map((item) => {

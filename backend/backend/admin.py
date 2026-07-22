@@ -12,7 +12,7 @@ class RestaurantPermitAdmin(admin.ModelAdmin):
 
 @admin.register(Tree)
 class TreeAdmin(admin.ModelAdmin):
-    list_display = ('tree_id', 'geom', 'status','family','genus','common_name','dbh_range','crown_condition','added_year','modified_year')
+    list_display = ('tree_id', 'geom', 'status','family','genus','common_name','dbh_range','crown_condition','added_date','modified_date')
     list_filter = ('status','family','genus','crown_condition','modified_year')
 
 
