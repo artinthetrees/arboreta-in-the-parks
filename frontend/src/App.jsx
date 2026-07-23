@@ -438,18 +438,18 @@ function App() {
 
             {/* <ZoomToBounds data={parkGeom} /> */}
 
-            {/* <LayersControl.Overlay checked name="park boundary">  */}
-            {/* 
-              The key prop forces React to completely recreate the layer 
-              instead of updating it silently when geoJsonData switches from null to loaded
-            */}
-            {treesInParkData && (
-              <ZoomToGeoJSON 
-                key={JSON.stringify(treesInParkData)} 
-                geoJsonData={treesInParkData} 
-              />
-            )}
-            {/* </LayersControl.Overlay>  */}
+            <LayersControl.Overlay checked name="park boundary"> 
+              {/* 
+                The key prop forces React to completely recreate the layer 
+                instead of updating it silently when geoJsonData switches from null to loaded
+              */}
+              {treesInParkData && (
+                <ZoomToGeoJSON 
+                  key={JSON.stringify(treesInParkData)} 
+                  geoJsonData={treesInParkData} 
+                />
+              )}
+            </LayersControl.Overlay> 
 
             <LayersControl.Overlay checked name="trees in park">
               {treesInParkGeoJson ? (
