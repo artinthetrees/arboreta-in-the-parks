@@ -101,6 +101,33 @@ function YearSelect({ setFilterVal }) {
   )
 }
 
+function ParkSelect({ setFilterVal, parkList }) {
+  // Filter by park name
+  const park_names = parkList
+  const options = park_names.map((park_name) => {
+    return (
+      <option value={park_name} key={park_name}>
+        {park_name}
+      </option>
+    )
+  })
+
+  return (
+    <>
+      <label htmlFor="parkSelect" className="fs-3">
+        Filter by park:{" "}
+      </label>
+      <select
+        id="parkSelect"
+        className="form-select form-select-lg mb-3"
+        onChange={(e) => setFilterVal(e.target.value)}
+      >
+        {options}
+      </select>
+    </>
+  )
+}
+
 function App() {
   const [count, setCount] = useState(0)
   const [response, setResponse] = useState("");
@@ -112,6 +139,9 @@ function App() {
   
   const [treeData, setTreeData] = useState([])
   const treeDataEndpoint = `http://localhost:8000/trees`
+
+  const [parkNames, setParkNames] = useState([])
+  const parkNamesEndpoint = `http://localhost:8000/park-names`
 
   const mapInitialCenter = [41.88, -87.62]
   const mapInitialZoom = 10
@@ -161,6 +191,24 @@ function App() {
   // console.log('First Tree:', firstTree);
   // const treePosition = treeData?.features[0]?.geometry?.coordinates
   // const treePositionZoom = 15
+
+  useEffect(() => {
+    fetch(parkNamesEndpoint)
+      .then((res) => {
+        console.log('Status:', res.status);
+        return res.json()
+      })  
+      .then((data) => {
+        // console.log('Data:', data);
+        setParkNames(data);
+      })
+      .catch(error => console.error('Error:', error)); // Log errors
+  }, [])
+
+  // Extract all 'name' values into a new array
+  const park_names_list = parkNames.map(dict => dict.name);
+  console.log(park_names_list); 
+
 
   // Single point geometry [latitude, longitude]
   const treePosition = [41.9391, -87.7023]; // Avondale, Chicago, IL
@@ -312,7 +360,7 @@ function App() {
             <ChangeView center={treePosition} zoom={treeZoomLevel} />
             <Marker position={treePosition}>
               <Popup>Target Location</Popup>
-            </Marker>
+            </Marker>          
 
             <ZoomTracker mapInitialZoom={mapInitialZoom}/>
 
