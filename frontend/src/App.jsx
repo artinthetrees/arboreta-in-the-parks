@@ -101,13 +101,14 @@ function YearSelect({ setFilterVal }) {
   )
 }
 
-function ParkSelect({ setFilterVal, parkList }) {
-  // Filter by park name
-  const park_names = parkList
-  const options = park_names.map((park_name) => {
+function ParkSelect({ setFilterVal, parkNames }) {
+  // Filter by the permit issue year for each restaurant
+  const parkNamesList = parkNames.map(dict => dict.name);
+    
+  const options = parkNamesList.map((parkName) => {
     return (
-      <option value={park_name} key={park_name}>
-        {park_name}
+      <option value={parkName} key={parkName}>
+        {parkName}
       </option>
     )
   })
@@ -128,6 +129,7 @@ function ParkSelect({ setFilterVal, parkList }) {
   )
 }
 
+
 function App() {
   const [count, setCount] = useState(0)
   const [response, setResponse] = useState("");
@@ -140,6 +142,7 @@ function App() {
   const [treeData, setTreeData] = useState([])
   const treeDataEndpoint = `http://localhost:8000/trees`
 
+  const [parkName, setParkName] = useState("INDEPENDENCE")
   const [parkNames, setParkNames] = useState([])
   const parkNamesEndpoint = `http://localhost:8000/park-names`
 
@@ -306,6 +309,7 @@ function App() {
           <h1>Let's explore!</h1>
         </div>
         <YearSelect filterVal={year} setFilterVal={setYear} />
+        <ParkSelect filterVal={parkName} setFilterVal={setParkName} parkNames={parkNames}/>
         {/* <div>
           <h1>Year is {year}</h1>
         </div> */}
