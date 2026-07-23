@@ -13,14 +13,14 @@ from rest_framework import viewsets
 from django.core.serializers import serialize
 from django.http import HttpResponse
 
-from backend.models import CommunityArea, Tree
-from backend.serializers import CommunityAreaSerializer
+from backend.models import CommunityArea, Tree, Park
+from backend.serializers import CommunityAreaSerializer, ParkGeoSerializer, TreeGeoSerializer
 
 from django.http import HttpResponse
 
 from django.contrib.gis.db.models.functions import AsGeoJSON
 
-from backend.serializers import TreeDRFSerializer
+#from backend.serializers import TreeDRFSerializer
 
 
 @api_view(['GET'])
@@ -37,6 +37,26 @@ class MapDataView(APIView):
             context={"year": request.query_params.get("year")},
         )
         return Response(serializer.data)
+
+class TreesInParkView(APIView):
+    def get(self, request):
+        park_name = request.query_params.get("name")
+        parks = Park.objects.all()
+        requested_park = parks.filter(name=park_name)
+        serializer = ParkGeoSerializer(
+            requested_park,
+            many=False,
+        )
+        return Response(serializer.data)
+
+class TreesInParksView(APIView):
+    def get(self, request):
+        parks = Park.objects.all()
+        serializer = ParkGeoSerializer(
+            parks,
+            many=True,
+        )
+        return Response(serializer.data)
     
 # class TreesView(APIView):
 #     def get(self, request):
@@ -51,9 +71,9 @@ class MapDataView(APIView):
 #     queryset = Tree.objects.all()
 #     serializer_class = TreeSerializer
 
-class TreeDRFViewSet(viewsets.ModelViewSet):
-    queryset = Tree.objects.all()
-    serializer_class = TreeDRFSerializer
+# class TreeDRFViewSet(viewsets.ModelViewSet):
+#     queryset = Tree.objects.all()
+#     serializer_class = TreeDRFSerializer
 
 def tree_geojson(request):
     geojson_data = serialize(
