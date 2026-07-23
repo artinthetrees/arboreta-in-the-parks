@@ -283,7 +283,8 @@ function App() {
   const parkGeomType = treesInParkData ? treesInParkData.features[0].geometry.type : undefined
   const parkGeom = treesInParkData ? treesInParkData.features[0].geometry.coordinates : undefined
   const numTreesInPark = treesInParkData ? treesInParkData.features[0].properties.contained_trees.features.length : undefined
-  
+  const treesInParkGeoJson = treesInParkData ? treesInParkData.features[0].properties.contained_trees : undefined
+
   console.log("park geometry type: ",parkGeomType); 
   console.log("number of trees in park: ",numTreesInPark); 
 
@@ -447,6 +448,16 @@ function App() {
                 geoJsonData={treesInParkData} 
               />
             )}
+
+            <LayersControl.Overlay checked name="trees in park">
+              {treesInParkGeoJson ? (
+                <GeoJSON
+                  data={treesInParkGeoJson}
+                  // onEachFeature={setAreaInteraction}
+                  key={treesInParkEndpoint}
+                />
+              ) : null}
+            </LayersControl.Overlay>
 
             {/* <ChangeView center={treePosition} zoom={treeZoomLevel} />
             <Marker position={treePosition}>
