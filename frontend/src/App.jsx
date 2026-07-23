@@ -402,7 +402,7 @@ function App() {
           <LayersControl position="topright">
         
             {/* Default Base Map */}
-            <LayersControl.BaseLayer checked name="OpenStreetMap">
+            <LayersControl.BaseLayer name="OpenStreetMap">
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png"
@@ -410,7 +410,7 @@ function App() {
             </LayersControl.BaseLayer>
 
             {/* Base Layer: Esri Satellite */}
-            <LayersControl.BaseLayer name="Satellite (Esri)">
+            <LayersControl.BaseLayer checked name="Satellite (Esri)">
               <TileLayer
                 url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
                 attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
@@ -426,7 +426,7 @@ function App() {
               />
             </LayersControl.BaseLayer>
 
-            <LayersControl.Overlay checked name="CA with counts">
+            <LayersControl.Overlay name="CA with counts">
               {currentYearData.length > 0 ? (
                 <GeoJSON
                   data={COMMUNITY_AREAS}
@@ -438,6 +438,7 @@ function App() {
 
             {/* <ZoomToBounds data={parkGeom} /> */}
 
+            {/* <LayersControl.Overlay checked name="park boundary">  */}
             {/* 
               The key prop forces React to completely recreate the layer 
               instead of updating it silently when geoJsonData switches from null to loaded
@@ -448,13 +449,15 @@ function App() {
                 geoJsonData={treesInParkData} 
               />
             )}
+            {/* </LayersControl.Overlay>  */}
 
             <LayersControl.Overlay checked name="trees in park">
               {treesInParkGeoJson ? (
                 <GeoJSON
+                  key={JSON.stringify(treesInParkGeoJson)}
                   data={treesInParkGeoJson}
                   // onEachFeature={setAreaInteraction}
-                  key={treesInParkEndpoint}
+                  
                 />
               ) : null}
             </LayersControl.Overlay>
