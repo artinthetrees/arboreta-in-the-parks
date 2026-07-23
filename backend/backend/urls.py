@@ -17,10 +17,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from backend.views import hello_world, MapDataView, tree_geojson
+from backend.views import hello_world, MapDataView, tree_geojson, TreesInParkView, TreesInParksView
 
 urlpatterns = [
     path("trees/",tree_geojson, name="trees"),
+    path("trees-in-parks/", TreesInParksView.as_view(), name="trees_in_parks_data"),
+    path("trees-in-park/", TreesInParkView.as_view(), name="trees_in_park_data"),
     path("map-data/", MapDataView.as_view(), name="map_data"),
     path('api/hello-world/', hello_world),
     path('admin/', admin.site.urls),
