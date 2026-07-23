@@ -229,9 +229,11 @@ function App() {
   // const park_names_list = parkNames.map(dict => dict.name);
   // console.log(park_names_list); 
   console.log(parkName)
-  // console.log(treesInParkData?.features[0].geometry.type)
-  // console.log(treesInParkData?.features[0].properties.contained_trees.features.length)
 
+  const parkGeomType = Object.keys(treesInParkData).length ? treesInParkData.features[0].geometry.type : undefined
+  const numTreesInPark = Object.keys(treesInParkData).length ? treesInParkData.features[0].properties.contained_trees.features.length : undefined
+  console.log(parkGeomType); 
+  console.log(numTreesInPark); 
 
   // Single point geometry [latitude, longitude]
   const treePosition = [41.9391, -87.7023]; // Avondale, Chicago, IL
