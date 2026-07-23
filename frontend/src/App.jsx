@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import reactLogo from './assets/react.svg';
 import viteLogo from './assets/vite.svg';
 import heroImg from './assets/hero.png';
 import sandyStream from './assets/sandystream.png'
 import './App.css';
 
-import { MapContainer, TileLayer, LayersControl, Marker, Popup, useMap, useMapEvents, GeoJSON } from "react-leaflet"
+import { MapContainer, TileLayer, LayersControl, Marker, Popup, useMap, useMapEvents, GeoJSON, FeatureGroup, Polygon } from "react-leaflet"
 import 'leaflet/dist/leaflet.css';
 
 // import L from 'leaflet';
@@ -129,6 +129,87 @@ function ParkSelect({ setFilterVal, parkNames }) {
   )
 }
 
+// function ZoomToBounds({ data }) {
+//   const map = useMap();
+//   const groupRef = useRef(null);
+
+//   useEffect(() => {
+//     if (groupRef.current) {
+//       const bounds = groupRef.current.getBounds();
+//       // padding adds a visual buffer around the edges in pixels [top/bottom, left/right]
+//       map.fitBounds(bounds, { padding: [50, 50] });
+//     }
+//   }, [map, data]);
+
+//   return (
+//     <FeatureGroup ref={groupRef}>
+//       <Polygon positions={data} pathOptions={{ color: 'purple' }} />
+//     </FeatureGroup>
+//   );
+// }
+
+// import React, { useState, useEffect, useRef } from 'react';
+// import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
+
+// Internal component to handle map movement after data loads
+function ZoomToGeoJSON({ geoJsonData }) {
+  const map = useMap();
+  const geoJsonRef = useRef(null);
+
+  useEffect(() => {
+    if (geoJsonData && geoJsonRef.current) {
+      // Extract boundary coordinates from the processed GeoJSON layer
+      const bounds = geoJsonRef.current.getBounds();
+      
+      // Auto-zoom with a pixel padding buffer around the shapes
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [50, 50] });
+      }
+    }
+  }, [map, geoJsonData]);
+
+  return (
+    <GeoJSON 
+      ref={geoJsonRef} 
+      data={geoJsonData} 
+      style={{ color: 'purple', weight: 3 }} 
+    />
+  );
+}
+
+// export default function App() {
+//   const [geoJsonData, setGeoJsonData] = useState(null);
+
+//   useEffect(() => {
+//     // Replace with your actual API endpoint URL
+//     fetch('https://example.com')
+//       .then((response) => response.json())
+//       .then((data) => setGeoJsonData(data))
+//       .catch((error) => console.error('Error fetching GeoJSON:', error));
+//   }, []);
+
+//   return (
+//     <MapContainer 
+//       center={[0, 0]} 
+//       zoom={2} 
+//       style={{ height: '500px', width: '100%' }}
+//     >
+//       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      
+//       {/* 
+//         The key prop forces React to completely recreate the layer 
+//         instead of updating it silently when geoJsonData switches from null to loaded
+//       */}
+//       {geoJsonData && (
+//         <ZoomToGeoJSON 
+//           key={JSON.stringify(geoJsonData)} 
+//           geoJsonData={geoJsonData} 
+//         />
+//       )}
+//     </MapContainer>
+//   );
+// }
+
 
 function App() {
   const [count, setCount] = useState(0)
@@ -147,7 +228,7 @@ function App() {
   const parkNamesEndpoint = `http://localhost:8000/park-names`
 
   const parkNameApiSafe = parkName.replaceAll(" ", "+")
-  const [treesInParkData, setTreesInParkData] = useState({})
+  const [treesInParkData, setTreesInParkData] = useState(null)
   const treesInParkEndpoint = `http://localhost:8000/trees-in-park/?name=${parkNameApiSafe}`
 
   const mapInitialCenter = [41.88, -87.62]
@@ -230,10 +311,15 @@ function App() {
   // console.log(park_names_list); 
   console.log(parkName)
 
-  const parkGeomType = Object.keys(treesInParkData).length ? treesInParkData.features[0].geometry.type : undefined
-  const numTreesInPark = Object.keys(treesInParkData).length ? treesInParkData.features[0].properties.contained_trees.features.length : undefined
-  console.log(parkGeomType); 
-  console.log(numTreesInPark); 
+  // const parkGeomType = Object.keys(treesInParkData).length ? treesInParkData.features[0].geometry.type : undefined
+  // const parkGeom = Object.keys(treesInParkData).length ? treesInParkData.features[0].geometry.coordinates : undefined
+  // const numTreesInPark = Object.keys(treesInParkData).length ? treesInParkData.features[0].properties.contained_trees.features.length : undefined
+  const parkGeomType = treesInParkData ? treesInParkData.features[0].geometry.type : undefined
+  const parkGeom = treesInParkData ? treesInParkData.features[0].geometry.coordinates : undefined
+  const numTreesInPark = treesInParkData ? treesInParkData.features[0].properties.contained_trees.features.length : undefined
+  
+  console.log("park geometry type: ",parkGeomType); 
+  console.log("number of trees in park: ",numTreesInPark); 
 
   // Single point geometry [latitude, longitude]
   const treePosition = [41.9391, -87.7023]; // Avondale, Chicago, IL
@@ -383,10 +469,23 @@ function App() {
               ) : null}
             </LayersControl.Overlay>
 
-            <ChangeView center={treePosition} zoom={treeZoomLevel} />
+            {/* <ZoomToBounds data={parkGeom} /> */}
+
+            {/* 
+              The key prop forces React to completely recreate the layer 
+              instead of updating it silently when geoJsonData switches from null to loaded
+            */}
+            {treesInParkData && (
+              <ZoomToGeoJSON 
+                key={JSON.stringify(treesInParkData)} 
+                geoJsonData={treesInParkData} 
+              />
+            )}
+
+            {/* <ChangeView center={treePosition} zoom={treeZoomLevel} />
             <Marker position={treePosition}>
               <Popup>Target Location</Popup>
-            </Marker>          
+            </Marker>           */}
 
             <ZoomTracker mapInitialZoom={mapInitialZoom}/>
 
