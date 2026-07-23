@@ -62,7 +62,7 @@ class TreesInParksView(APIView):
     
 class ParkNamesView(APIView):
     def get(self, request):
-        parks = Park.objects.all()
+        parks = Park.objects.all().order_by('name')
         serializer = ParkNamesSerializer(
             parks,
             many=True,
