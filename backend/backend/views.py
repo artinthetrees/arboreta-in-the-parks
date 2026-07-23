@@ -41,11 +41,13 @@ class MapDataView(APIView):
 class TreesInParkView(APIView):
     def get(self, request):
         park_name = request.query_params.get("name")
-        parks = Park.objects.all()
-        requested_park = parks.filter(name=park_name)
+        print("requested park name: ",park_name)
+        #parks = Park.objects.all()
+        requested_park = Park.objects.filter(name=park_name)
+        print("requested park object: ",requested_park)
         serializer = ParkGeoSerializer(
             requested_park,
-            many=False,
+            many=True,
         )
         return Response(serializer.data)
 
