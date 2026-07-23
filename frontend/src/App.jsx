@@ -177,40 +177,6 @@ function ZoomToGeoJSON({ geoJsonData }) {
   );
 }
 
-// export default function App() {
-//   const [geoJsonData, setGeoJsonData] = useState(null);
-
-//   useEffect(() => {
-//     // Replace with your actual API endpoint URL
-//     fetch('https://example.com')
-//       .then((response) => response.json())
-//       .then((data) => setGeoJsonData(data))
-//       .catch((error) => console.error('Error fetching GeoJSON:', error));
-//   }, []);
-
-//   return (
-//     <MapContainer 
-//       center={[0, 0]} 
-//       zoom={2} 
-//       style={{ height: '500px', width: '100%' }}
-//     >
-//       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      
-//       {/* 
-//         The key prop forces React to completely recreate the layer 
-//         instead of updating it silently when geoJsonData switches from null to loaded
-//       */}
-//       {geoJsonData && (
-//         <ZoomToGeoJSON 
-//           key={JSON.stringify(geoJsonData)} 
-//           geoJsonData={geoJsonData} 
-//         />
-//       )}
-//     </MapContainer>
-//   );
-// }
-
-
 function App() {
   const [count, setCount] = useState(0)
   const [response, setResponse] = useState("");
@@ -223,13 +189,13 @@ function App() {
   const [treeData, setTreeData] = useState([])
   const treeDataEndpoint = `http://localhost:8000/trees`
 
-  const [parkName, setParkName] = useState("INDEPENDENCE")
   const [parkNames, setParkNames] = useState([])
   const parkNamesEndpoint = `http://localhost:8000/park-names`
 
-  const parkNameApiSafe = parkName.replaceAll(" ", "+")
+  const [parkName, setParkName] = useState(null)
+  const parkNameApiSafe = parkName ? parkName.replaceAll(" ", "+") : null
   const [treesInParkData, setTreesInParkData] = useState(null)
-  const treesInParkEndpoint = `http://localhost:8000/trees-in-park/?name=${parkNameApiSafe}`
+  const treesInParkEndpoint = parkName ? `http://localhost:8000/trees-in-park/?name=${parkNameApiSafe}` : null
 
   const mapInitialCenter = [41.88, -87.62]
   const mapInitialZoom = 10
@@ -309,7 +275,7 @@ function App() {
   // // Extract all 'name' values into a new array
   // const park_names_list = parkNames.map(dict => dict.name);
   // console.log(park_names_list); 
-  console.log(parkName)
+  console.log("park name: ",parkName)
 
   // const parkGeomType = Object.keys(treesInParkData).length ? treesInParkData.features[0].geometry.type : undefined
   // const parkGeom = Object.keys(treesInParkData).length ? treesInParkData.features[0].geometry.coordinates : undefined
