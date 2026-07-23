@@ -14,7 +14,7 @@ from django.core.serializers import serialize
 from django.http import HttpResponse
 
 from backend.models import CommunityArea, Tree, Park
-from backend.serializers import CommunityAreaSerializer, ParkGeoSerializer, TreeGeoSerializer
+from backend.serializers import CommunityAreaSerializer, ParkGeoSerializer, TreeGeoSerializer, ParkNamesSerializer
 
 from django.http import HttpResponse
 
@@ -55,6 +55,15 @@ class TreesInParksView(APIView):
     def get(self, request):
         parks = Park.objects.all()
         serializer = ParkGeoSerializer(
+            parks,
+            many=True,
+        )
+        return Response(serializer.data)
+    
+class ParkNamesView(APIView):
+    def get(self, request):
+        parks = Park.objects.all()
+        serializer = ParkNamesSerializer(
             parks,
             many=True,
         )

@@ -55,6 +55,11 @@ class ParkGeoSerializer(GeoFeatureModelSerializer):
     # This embeds a full GeoJSON FeatureCollection of points inside the properties
     return TreeGeoSerializer(trees, many=True).data
 
+class ParkNamesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Park
+        fields = ['name']  # Only these fields are returned
+
 class CommunityAreaSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommunityArea
