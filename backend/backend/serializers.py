@@ -3,7 +3,7 @@ from rest_framework_gis.serializers import GeoFeatureModelSerializer
 
 from rest_framework_gis.fields import GeometryField
 
-from backend.models import CommunityArea, RestaurantPermit, Tree
+from backend.models import CommunityArea, RestaurantPermit, Tree, Park
 #from .models import CommunityArea, RestaurantPermit
 
 # class TreeSerializer(serializers.ModelSerializer):
@@ -17,7 +17,21 @@ from backend.models import CommunityArea, RestaurantPermit, Tree
 #         geo_field = "geom"  # Your PointField name
 #         fields = ("id", "status","common_name","dbh_range","crown_condition")
 
-class TreeGFDRFSerializer(GeoFeatureModelSerializer):
+# class TreeDRFSerializer(serializers.ModelSerializer):
+#     geom = GeometryField(precision=8)
+    
+#     class Meta:
+#         model = Tree
+#         fields = [
+#             "id",
+#             "status",
+#             "common_name",
+#             "dbh_range",
+#             "crown_condition",
+#             "geom",
+#         ]
+
+class TreeGeoSerializer(GeoFeatureModelSerializer):
     """ A class to serialize locations as GeoJSON compatible data """
 
     class Meta:
@@ -26,21 +40,20 @@ class TreeGFDRFSerializer(GeoFeatureModelSerializer):
 
         # you can also explicitly declare which fields you want to include
         # as with a ModelSerializer.
-        fields = ("id", "status","common_name","dbh_range","crown_condition")
+        fields = ("id","status","common_name","dbh_range","crown_condition")
 
-class TreeDRFSerializer(serializers.ModelSerializer):
-    geom = GeometryField(precision=8)
-    
-    class Meta:
-        model = Tree
-        fields = [
-            "id",
-            "status",
-            "common_name",
-            "dbh_range",
-            "crown_condition",
-            "geom",
-        ]
+class ParkGeoSerializer(GeoFeatureModelSerializer):
+  contained_trees = serializers.SerializerMethodField()
+
+  class Meta:
+    model = Park
+    geo_field = "geom"
+    fields = ['name', 'contained_trees']
+
+  def get_contained_trees(self, obj):
+    trees = Tree.objects.filter(geom__within=obj.geom)
+    # This embeds a full GeoJSON FeatureCollection of points inside the properties
+    return TreeGeoSerializer(trees, many=True).data
 
 class CommunityAreaSerializer(serializers.ModelSerializer):
     class Meta:
