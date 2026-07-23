@@ -146,6 +146,10 @@ function App() {
   const [parkNames, setParkNames] = useState([])
   const parkNamesEndpoint = `http://localhost:8000/park-names`
 
+  const parkNameApiSafe = parkName.replaceAll(" ", "+")
+  const [treesInParkData, setTreesInParkData] = useState({})
+  const treesInParkEndpoint = `http://localhost:8000/trees-in-park/?name=${parkNameApiSafe}`
+
   const mapInitialCenter = [41.88, -87.62]
   const mapInitialZoom = 10
 
@@ -208,9 +212,25 @@ function App() {
       .catch(error => console.error('Error:', error)); // Log errors
   }, [])
 
-  // Extract all 'name' values into a new array
-  const park_names_list = parkNames.map(dict => dict.name);
-  console.log(park_names_list); 
+  useEffect(() => {
+    fetch(treesInParkEndpoint)
+      .then((res) => {
+        console.log('Status:', res.status);
+        return res.json()
+      })  
+      .then((data) => {
+        // console.log('Data:', data);
+        setTreesInParkData(data);
+      })
+      .catch(error => console.error('Error:', error)); // Log errors
+  }, [treesInParkEndpoint])
+
+  // // Extract all 'name' values into a new array
+  // const park_names_list = parkNames.map(dict => dict.name);
+  // console.log(park_names_list); 
+  console.log(parkName)
+  // console.log(treesInParkData?.features[0].geometry.type)
+  // console.log(treesInParkData?.features[0].properties.contained_trees.features.length)
 
 
   // Single point geometry [latitude, longitude]
