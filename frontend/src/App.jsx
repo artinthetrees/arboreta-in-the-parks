@@ -309,10 +309,12 @@ function App() {
         {/* <p className="fs-4">
           <b>Restaurant permits issued this year:</b> { totalPermits }
         </p> */}
-        <p className="fs-4">
-          <b>Number of unique tree types identified in this park:</b> { treeTypeUniqueCount }
-        </p>
         {treesInParkData && (
+            <p className="fs-4">
+              <b>Number of unique tree types identified in this park:</b> { treeTypeUniqueCount }
+            </p>
+        )}
+        {treesInParkData && treeTypeUniqueCount !== 0 && (
                 <ValueCountsTable 
                   data={treeTypeValueCounts} 
                 />
