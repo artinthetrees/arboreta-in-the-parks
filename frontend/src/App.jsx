@@ -190,7 +190,8 @@ function App() {
     }, {});
 
   console.log("value counts: ",treesInParkData ? calcValueCounts(treesInParkList,"common_name") : undefined)
-  const valueCounts = treesInParkData ? calcValueCounts(treesInParkList,"common_name") : undefined
+  const treeTypeValueCounts = treesInParkData ? calcValueCounts(treesInParkList,"common_name") : undefined
+  const treeTypeUniqueCount = treesInParkData ? Object.keys(treeTypeValueCounts).length : undefined
   // // Get total number of permits across all community areas in the selected year
   // const totalPermits = currentYearData.reduce((accumulator, currentItem) => {
   //   return accumulator + currentItem.num_permits;
@@ -307,13 +308,13 @@ function App() {
         <ParkSelect filterVal={parkName} setFilterVal={setParkName} parkNames={parkNames}/>
         {/* <p className="fs-4">
           <b>Restaurant permits issued this year:</b> { totalPermits }
-        </p>
-        <p className="fs-4">
-          <b>Maximum number of restaurant permits issued in a single community area:</b> { maxPermits }
         </p> */}
+        <p className="fs-4">
+          <b>Number of unique tree types identified in this park:</b> { treeTypeUniqueCount }
+        </p>
         {treesInParkData && (
                 <ValueCountsTable 
-                  data={valueCounts} 
+                  data={treeTypeValueCounts} 
                 />
               )}
         <MapContainer
