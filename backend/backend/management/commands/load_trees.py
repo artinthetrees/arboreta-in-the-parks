@@ -31,9 +31,9 @@ class Command(BaseCommand):
                     continue
 
                 try:
-                    # handle case where community area is not provided and is an empty string so can't be directly coerced to integer
+                    # handle case where dbh is not provided and is an empty string so can't be directly coerced to integer or is provided as a float (in this case, round to nearest integer)
                     try:
-                        dbh_int = int(row["DBH"])
+                        dbh_int = int(round(float(row["DBH"])))
                     except:
                         dbh_int = None
 
