@@ -38,12 +38,12 @@ class Command(BaseCommand):
                         dbh_int = None
 
                     try:
-                        added_date=datetime.fromisoformat(row["Date Added"])
+                        added_date = datetime.strptime(row["Date Added"], "%m/%d/%Y")
                     except:
                         added_date = None
 
                     try:
-                        modified_date=datetime.fromisoformat(row["Last Modified"])
+                        modified_date=datetime.strptime(row["Last Modified"], "%m/%d/%Y")
                     except:
                         modified_date = None
 
