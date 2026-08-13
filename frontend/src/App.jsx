@@ -8,12 +8,10 @@ import './App.css';
 import { MapContainer, TileLayer, LayersControl, Marker, Popup, useMap, useMapEvents, GeoJSON, FeatureGroup, Polygon } from "react-leaflet"
 import 'leaflet/dist/leaflet.css';
 
-// Reusable component accepting GeoJSON features array and property keys
 export function GeoJsonSummaryTable({ features, speciesKey, conditionKey }) {
-  // Guard clause for empty or missing features
   if (!features || features.length === 0) return <p>No data available</p>;
 
-  // Count items by looking inside the properties object
+  // 1. Count items by looking inside the properties object
   const counts = features.reduce((acc, feature) => {
     const properties = feature.properties || {};
     const species = properties[speciesKey];
@@ -26,9 +24,7 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey }) {
     return acc;
   }, {});
 
-  const speciesList = Object.keys(counts);
-
-  // Extract unique conditions dynamically from properties
+  // 2. Extract unique conditions dynamically for columns
   const conditionsList = Array.from(
     new Set(
       features
@@ -37,9 +33,15 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey }) {
     )
   );
 
+  // 3. Pre-calculate row totals and sort species descending
+  const speciesList = Object.keys(counts).sort((a, b) => {
+    const totalA = conditionsList.reduce((sum, cond) => sum + (counts[a][cond] || 0), 0);
+    const totalB = conditionsList.reduce((sum, cond) => sum + (counts[b][cond] || 0), 0);
+    return totalB - totalA; // High to low
+  });
+
   const grandTotal = features.length;
 
-  // Calculate column totals dynamically from properties
   const columnTotals = conditionsList.reduce((acc, cond) => {
     acc[cond] = features.filter(
       (feature) => feature.properties?.[conditionKey] === cond
@@ -51,7 +53,6 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey }) {
     <table>
       <thead>
         <tr>
-          {/* Capitalizes the first letter of your species key for the header */}
           <th style={{ textTransform: 'capitalize' }}>{speciesKey}</th>
           {conditionsList.map((cond) => (
             <th key={cond}>{cond}</th>
@@ -86,6 +87,86 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey }) {
     </table>
   );
 }
+
+
+// // Reusable component accepting GeoJSON features array and property keys
+// export function GeoJsonSummaryTable({ features, speciesKey, conditionKey }) {
+//   // Guard clause for empty or missing features
+//   if (!features || features.length === 0) return <p>No data available</p>;
+
+//   // Count items by looking inside the properties object
+//   const counts = features.reduce((acc, feature) => {
+//     const properties = feature.properties || {};
+//     const species = properties[speciesKey];
+//     const condition = properties[conditionKey];
+
+//     if (species && condition) {
+//       acc[species] = acc[species] || {};
+//       acc[species][condition] = (acc[species][condition] || 0) + 1;
+//     }
+//     return acc;
+//   }, {});
+
+//   const speciesList = Object.keys(counts);
+
+//   // Extract unique conditions dynamically from properties
+//   const conditionsList = Array.from(
+//     new Set(
+//       features
+//         .map((feature) => feature.properties?.[conditionKey])
+//         .filter(Boolean)
+//     )
+//   );
+
+//   const grandTotal = features.length;
+
+//   // Calculate column totals dynamically from properties
+//   const columnTotals = conditionsList.reduce((acc, cond) => {
+//     acc[cond] = features.filter(
+//       (feature) => feature.properties?.[conditionKey] === cond
+//     ).length;
+//     return acc;
+//   }, {});
+
+//   return (
+//     <table>
+//       <thead>
+//         <tr>
+//           {/* Capitalizes the first letter of your species key for the header */}
+//           <th style={{ textTransform: 'capitalize' }}>{speciesKey}</th>
+//           {conditionsList.map((cond) => (
+//             <th key={cond}>{cond}</th>
+//           ))}
+//           <th>Total</th>
+//         </tr>
+//       </thead>
+//       <tbody>
+//         {speciesList.map((species) => {
+//           const rowTotal = conditionsList.reduce((sum, cond) => {
+//             return sum + (counts[species][cond] || 0);
+//           }, 0);
+
+//           return (
+//             <tr key={species}>
+//               <td>{species}</td>
+//               {conditionsList.map((cond) => (
+//                 <td key={cond}>{counts[species][cond] || 0}</td>
+//               ))}
+//               <td><strong>{rowTotal}</strong></td>
+//             </tr>
+//           );
+//         })}
+//         <tr>
+//           <td><strong>Total</strong></td>
+//           {conditionsList.map((cond) => (
+//             <td key={cond}><strong>{columnTotals[cond]}</strong></td>
+//           ))}
+//           <td><strong>{grandTotal}</strong></td>
+//         </tr>
+//       </tbody>
+//     </table>
+//   );
+// }
 
 
 function ParkSelect({ setFilterVal, parkNames }) {
@@ -395,11 +476,11 @@ function App() {
             <b>Number of unique tree types identified in this park:</b> {treeTypeUniqueCount}
           </p>
         )}
-        {treesInParkData && treeTypeUniqueCount !== 0 && (
+        {/* {treesInParkData && treeTypeUniqueCount !== 0 && (
           <ValueCountsTable
             data={treeTypeValueCounts}
           />
-        )}
+        )} */}
         {treesInParkData && treeTypeUniqueCount !== 0 && (
           <GeoJsonSummaryTable
             features={treesInParkList}
