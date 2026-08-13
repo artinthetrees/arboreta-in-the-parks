@@ -8,10 +8,90 @@ import './App.css';
 import { MapContainer, TileLayer, LayersControl, Marker, Popup, useMap, useMapEvents, GeoJSON, FeatureGroup, Polygon } from "react-leaflet"
 import 'leaflet/dist/leaflet.css';
 
+// Reusable component accepting GeoJSON features array and property keys
+export function GeoJsonSummaryTable({ features, speciesKey, conditionKey }) {
+  // Guard clause for empty or missing features
+  if (!features || features.length === 0) return <p>No data available</p>;
+
+  // Count items by looking inside the properties object
+  const counts = features.reduce((acc, feature) => {
+    const properties = feature.properties || {};
+    const species = properties[speciesKey];
+    const condition = properties[conditionKey];
+
+    if (species && condition) {
+      acc[species] = acc[species] || {};
+      acc[species][condition] = (acc[species][condition] || 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  const speciesList = Object.keys(counts);
+
+  // Extract unique conditions dynamically from properties
+  const conditionsList = Array.from(
+    new Set(
+      features
+        .map((feature) => feature.properties?.[conditionKey])
+        .filter(Boolean)
+    )
+  );
+
+  const grandTotal = features.length;
+
+  // Calculate column totals dynamically from properties
+  const columnTotals = conditionsList.reduce((acc, cond) => {
+    acc[cond] = features.filter(
+      (feature) => feature.properties?.[conditionKey] === cond
+    ).length;
+    return acc;
+  }, {});
+
+  return (
+    <table>
+      <thead>
+        <tr>
+          {/* Capitalizes the first letter of your species key for the header */}
+          <th style={{ textTransform: 'capitalize' }}>{speciesKey}</th>
+          {conditionsList.map((cond) => (
+            <th key={cond}>{cond}</th>
+          ))}
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {speciesList.map((species) => {
+          const rowTotal = conditionsList.reduce((sum, cond) => {
+            return sum + (counts[species][cond] || 0);
+          }, 0);
+
+          return (
+            <tr key={species}>
+              <td>{species}</td>
+              {conditionsList.map((cond) => (
+                <td key={cond}>{counts[species][cond] || 0}</td>
+              ))}
+              <td><strong>{rowTotal}</strong></td>
+            </tr>
+          );
+        })}
+        <tr>
+          <td><strong>Total</strong></td>
+          {conditionsList.map((cond) => (
+            <td key={cond}><strong>{columnTotals[cond]}</strong></td>
+          ))}
+          <td><strong>{grandTotal}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
+
 function ParkSelect({ setFilterVal, parkNames }) {
   // Set parkName using user selection from dropdown of list of all parkNames
   const parkNamesList = parkNames.map(dict => dict.name);
-    
+
   const options = parkNamesList.map((parkName) => {
     return (
       <option value={parkName} key={parkName}>
@@ -45,7 +125,7 @@ function ZoomToGeoJSON({ geoJsonData }) {
     if (geoJsonData && geoJsonRef.current) {
       // Extract boundary coordinates from the processed GeoJSON layer
       const bounds = geoJsonRef.current.getBounds();
-      
+
       // Auto-zoom with a pixel padding buffer around the shapes
       if (bounds.isValid()) {
         map.fitBounds(bounds, { padding: [50, 50] });
@@ -54,16 +134,16 @@ function ZoomToGeoJSON({ geoJsonData }) {
   }, [map, geoJsonData]);
 
   return (
-    <GeoJSON 
-      ref={geoJsonRef} 
-      data={geoJsonData} 
-      style={{ color: 'purple', weight: 3 }} 
+    <GeoJSON
+      ref={geoJsonRef}
+      data={geoJsonData}
+      style={{ color: 'purple', weight: 3 }}
     />
   );
 }
 
 // 1. Create a child component inside MapContainer
-function ZoomTracker({mapInitialZoom}) {
+function ZoomTracker({ mapInitialZoom }) {
   const [zoomLevel, setZoomLevel] = useState(mapInitialZoom); // initial zoom
 
   const map = useMapEvents({
@@ -74,12 +154,12 @@ function ZoomTracker({mapInitialZoom}) {
 
   return (
     <div style={{
-      position: 'absolute', 
-      top: 10, 
-      left: 50, 
-      zIndex: 1000, 
-      background: 'white', 
-      padding: '5px' 
+      position: 'absolute',
+      top: 10,
+      left: 50,
+      zIndex: 1000,
+      background: 'white',
+      padding: '5px'
     }}>
       Current Zoom: {zoomLevel}
     </div>
@@ -110,7 +190,7 @@ function ValueCountsTable({ data }) {
 }
 
 function App() {
-    
+
   const [parkNames, setParkNames] = useState([])
   const parkNamesEndpoint = `http://localhost:8000/park-names`
 
@@ -128,7 +208,7 @@ function App() {
       .then((res) => {
         console.log('Status:', res.status);
         return res.json()
-      })  
+      })
       .then((data) => {
         // console.log('Data:', data);
         setParkNames(data);
@@ -142,7 +222,7 @@ function App() {
       .then((res) => {
         console.log('Status:', res.status);
         return res.json()
-      })  
+      })
       .then((data) => {
         // console.log('Data:', data);
         setTreesInParkData(data);
@@ -151,7 +231,7 @@ function App() {
   }, [treesInParkEndpoint])
 
   // parkName set by user selection from dropdown  
-  console.log("park name: ",parkName)
+  console.log("park name: ", parkName)
 
   const parkGeomType = treesInParkData ? treesInParkData.features[0].geometry.type : undefined
   const parkGeom = treesInParkData ? treesInParkData.features[0].geometry.coordinates : undefined
@@ -159,39 +239,40 @@ function App() {
   const treesInParkGeoJson = treesInParkData ? treesInParkData.features[0].properties.contained_trees : undefined
   const treesInParkList = treesInParkData ? treesInParkData.features[0].properties.contained_trees.features : undefined
 
-  console.log("number of tree inventory points in park: ",numTreesInPark)
-  
+  console.log("number of tree inventory points in park: ", numTreesInPark)
+
   const uniqueItems = (list, keyFn) => list.reduce((resultSet, item) =>
-      resultSet.add(typeof keyFn === 'string' ? item[keyFn] : keyFn(item)),
+    resultSet.add(typeof keyFn === 'string' ? item[keyFn] : keyFn(item)),
     new Set);
 
   const uniqueItemsNonNull_n = (list, keyFn) => list.reduce((resultSet, item) =>
-      (v => v !== null && v !== undefined && v !== "" && !v.startsWith("Unknown")? resultSet.add(v) : resultSet)
+    (v => v !== null && v !== undefined && v !== "" && !v.startsWith("Unknown") ? resultSet.add(v) : resultSet)
       (typeof keyFn === 'string' ? item["properties"][keyFn] : keyFn(item)),
     new Set).size;
 
   const uniqueItemsNonNull = (list, keyFn) => list.reduce((resultSet, item) =>
-      (v => v !== null && v !== undefined && v !== "" && !v.startsWith("Unknown")? resultSet.add(v) : resultSet)
+    (v => v !== null && v !== undefined && v !== "" && !v.startsWith("Unknown") ? resultSet.add(v) : resultSet)
       (typeof keyFn === 'string' ? item["properties"][keyFn] : keyFn(item)),
     new Set);
 
-  console.log("number of tree types in park: ", treesInParkData ? uniqueItemsNonNull_n(treesInParkList, 'common_name') : undefined); 
-  console.log("tree types in park: ", treesInParkData ? uniqueItemsNonNull(treesInParkList, 'common_name') : undefined); 
-  
-  // 1. Get the frequency count of each key value (ignoring empty strings)
-  const calcValueCounts = (list,key) => list.reduce((acc, obj) => {
-      const value = obj["properties"][key];
-      
-      if (value !== "" && !value.startsWith("Unknown")) {
-        acc[value] = (acc[value] || 0) + 1;
-      }
-      
-      return acc;
-    }, {});
+  console.log("number of tree types in park: ", treesInParkData ? uniqueItemsNonNull_n(treesInParkList, 'common_name') : undefined);
+  console.log("tree types in park: ", treesInParkData ? uniqueItemsNonNull(treesInParkList, 'common_name') : undefined);
 
-  console.log("value counts: ",treesInParkData ? calcValueCounts(treesInParkList,"common_name") : undefined)
-  const treeTypeValueCounts = treesInParkData ? calcValueCounts(treesInParkList,"common_name") : undefined
+  // 1. Get the frequency count of each key value (ignoring empty strings)
+  const calcValueCounts = (list, key) => list.reduce((acc, obj) => {
+    const value = obj["properties"][key];
+
+    if (value !== "" && !value.startsWith("Unknown")) {
+      acc[value] = (acc[value] || 0) + 1;
+    }
+
+    return acc;
+  }, {});
+
+  console.log("value counts: ", treesInParkData ? calcValueCounts(treesInParkList, "common_name") : undefined)
+  const treeTypeValueCounts = treesInParkData ? calcValueCounts(treesInParkList, "common_name") : undefined
   const treeTypeUniqueCount = treesInParkData ? Object.keys(treeTypeValueCounts).length : undefined
+
   // // Get total number of permits across all community areas in the selected year
   // const totalPermits = currentYearData.reduce((accumulator, currentItem) => {
   //   return accumulator + currentItem.num_permits;
@@ -206,7 +287,7 @@ function App() {
   // const getQuartiles = (arr, key) => {
   //   // 1. Extract key values from each dictionary in array of dictionaries and sort values numerically
   //   const values = arr.map(item => item[key]).sort((a, b) => a - b);
-    
+
   //   const quantile = (sortedArr, q) => {
   //     const pos = (sortedArr.length - 1) * q;
   //     const base = Math.floor(pos);
@@ -231,7 +312,7 @@ function App() {
   // define a fx that determines which quartile of num/percent of permits a ca is in 
   // and assigns it a color based on its quartile
   function getColor(percentageOfPermits) {
-    
+
     const communityAreaColors = ["#eff3ff", "#bdd7e7", "#6baed6", "#2171b5"]
 
     if (percentageOfPermits <= permitPercentQuartiles.q1) {
@@ -250,16 +331,16 @@ function App() {
   // // stored for that ca in the ca backend model/db and use that data to display 
   // // information specific to each ca on the frontend
   // function setAreaInteraction(feature, layer) {
-    
+
   //   const ca_name = feature?.properties?.community || "Unknown";
   //   const ca_model_data = currentYearData.find(ca_entry => ca_entry.name === ca_name);
-    
+
   //   const ca_model_data_str = JSON.stringify(ca_model_data, null, 2)
   //   const ca_num_permits_str = ca_model_data.num_permits.toString()
-    
+
   //   let pop_up_str = `${ca_name}<br>Permits: ${ca_num_permits_str}`;
   //   let ca_color = getColor(ca_model_data.percent_permits)
-    
+
   //   layer.setStyle({
   //     fillColor: ca_color, // Fill color based on quartile of permits issued
   //     fillOpacity: 0.5,    // Semi-transparent
@@ -276,14 +357,14 @@ function App() {
   // stored for that ca in the ca backend model/db and use that data to display 
   // information specific to each ca on the frontend
   function setEachTree(feature, layer) {
-    
+
     const model_data = feature?.properties || "Unknown";
-    
+
     const model_data_str = JSON.stringify(model_data, null, 2)
-    
+
     // let pop_up_str = `${ca_name}<br>Permits: ${ca_num_permits_str}`;
     // let ca_color = getColor(ca_model_data.percent_permits)
-    
+
     // layer.setStyle({
     //   fillColor: ca_color, // Fill color based on quartile of permits issued
     //   fillOpacity: 0.5,    // Semi-transparent
@@ -305,27 +386,34 @@ function App() {
         <div>
           <h1>Arboreta in the Parks</h1>
         </div>
-        <ParkSelect filterVal={parkName} setFilterVal={setParkName} parkNames={parkNames}/>
+        <ParkSelect filterVal={parkName} setFilterVal={setParkName} parkNames={parkNames} />
         {/* <p className="fs-4">
           <b>Restaurant permits issued this year:</b> { totalPermits }
         </p> */}
         {treesInParkData && (
-            <p className="fs-4">
-              <b>Number of unique tree types identified in this park:</b> { treeTypeUniqueCount }
-            </p>
+          <p className="fs-4">
+            <b>Number of unique tree types identified in this park:</b> {treeTypeUniqueCount}
+          </p>
         )}
         {treesInParkData && treeTypeUniqueCount !== 0 && (
-                <ValueCountsTable 
-                  data={treeTypeValueCounts} 
-                />
-              )}
+          <ValueCountsTable
+            data={treeTypeValueCounts}
+          />
+        )}
+        {treesInParkData && treeTypeUniqueCount !== 0 && (
+          <GeoJsonSummaryTable
+            features={treesInParkList}
+            speciesKey="common_name"
+            conditionKey="crown_condition"
+          />
+        )}
         <MapContainer
           id="city-map"
           center={mapInitialCenter}
           zoom={mapInitialZoom}
         >
           <LayersControl position="topright">
-        
+
             {/* Default Base Map */}
             <LayersControl.BaseLayer name="OpenStreetMap">
               <TileLayer
@@ -363,18 +451,18 @@ function App() {
 
             {/* <ZoomToBounds data={parkGeom} /> */}
 
-            <LayersControl.Overlay checked name="park boundary"> 
+            <LayersControl.Overlay checked name="park boundary">
               {/* 
                 The key prop forces React to completely recreate the layer 
                 instead of updating it silently when geoJsonData switches from null to loaded
               */}
               {treesInParkData && (
-                <ZoomToGeoJSON 
-                  key={JSON.stringify(treesInParkData)} 
-                  geoJsonData={treesInParkData} 
+                <ZoomToGeoJSON
+                  key={JSON.stringify(treesInParkData)}
+                  geoJsonData={treesInParkData}
                 />
               )}
-            </LayersControl.Overlay> 
+            </LayersControl.Overlay>
 
             <LayersControl.Overlay checked name="trees in park">
               {treesInParkGeoJson ? (
@@ -382,13 +470,13 @@ function App() {
                   key={JSON.stringify(treesInParkGeoJson)}
                   data={treesInParkGeoJson}
                   onEachFeature={setEachTree}
-                  // onEachFeature={setAreaInteraction}
-                  
+                // onEachFeature={setAreaInteraction}
+
                 />
               ) : null}
             </LayersControl.Overlay>
 
-            <ZoomTracker mapInitialZoom={mapInitialZoom}/>
+            <ZoomTracker mapInitialZoom={mapInitialZoom} />
 
           </LayersControl>
         </MapContainer>
