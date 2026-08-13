@@ -8,7 +8,7 @@ import './App.css';
 import { MapContainer, TileLayer, LayersControl, Marker, Popup, useMap, useMapEvents, GeoJSON, FeatureGroup, Polygon } from "react-leaflet"
 import 'leaflet/dist/leaflet.css';
 
-export function GeoJsonSummaryTable({ features, speciesKey, conditionKey }) {
+export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, conditionValues = false }) {
   if (!features || features.length === 0) return <p>No data available</p>;
 
   // 1. Count items by looking inside the properties object
@@ -24,8 +24,10 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey }) {
     return acc;
   }, {});
 
+  console.log("counts: ", counts)
+
   // 2. Extract unique conditions dynamically for columns
-  const conditionsList = Array.from(
+  const conditionsList = conditionValues ? conditionValues : Array.from(
     new Set(
       features
         .map((feature) => feature.properties?.[conditionKey])
@@ -283,6 +285,8 @@ function App() {
   const mapInitialCenter = [41.88, -87.62]
   const mapInitialZoom = 10
 
+  const crownConditionValues = ["Good", "Fair", "Poor", "Dead"]
+
   // set up a useEffect hook to run a fetch of park names list any time the site reloads
   useEffect(() => {
     fetch(parkNamesEndpoint)
@@ -486,6 +490,7 @@ function App() {
             features={treesInParkList}
             speciesKey="common_name"
             conditionKey="crown_condition"
+            conditionValues={crownConditionValues}
           />
         )}
         <MapContainer
