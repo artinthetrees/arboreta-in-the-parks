@@ -37,10 +37,10 @@ class Command(BaseCommand):
                     except:
                         primary_id_int = None
 
-                    try:
-                        tree_id_int = int(row["Tree Id"])
-                    except:
-                        tree_id_int = None
+                    # try:
+                    #     tree_id_int = int(row["Tree Id"])
+                    # except:
+                    #     tree_id_int = None
 
                     # handle case where dbh is not provided and is an empty string so can't be directly coerced to integer or is provided as a float (in this case, round to nearest integer)
                     try:
@@ -66,7 +66,7 @@ class Command(BaseCommand):
                     tree = Tree(
                         
                         tree_primary_id=primary_id_int,
-                        tree_id=tree_id_int,
+                        #tree_id=tree_id_int,
                         geom=location_point,
                         status=row["Status"],
                         common_name=row["Common Name"],

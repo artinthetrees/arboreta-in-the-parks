@@ -19,7 +19,7 @@ class Park(models.Model):
     
 class Tree(models.Model):
     tree_primary_id = models.CharField(null=False, blank=True)
-    tree_id = models.CharField(null=False, blank=True)
+    #tree_id = models.CharField(null=False, blank=True)
     geom = gis_models.PointField(null=True, blank=True)
     status = models.CharField(null=True, blank=True)
     common_name = models.CharField(null=True, blank=True)
