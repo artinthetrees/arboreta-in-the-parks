@@ -13,7 +13,7 @@ class RestaurantPermitAdmin(gis_admin.GISModelAdmin):
 
 @admin.register(Tree)
 class TreeAdmin(gis_admin.GISModelAdmin):
-    list_display = ('tree_id', 'geom', 'status','family','genus','common_name','dbh_range','crown_condition','added_date','modified_date')
+    list_display = ('tree_primary_id', 'geom', 'status','family','genus','common_name','dbh_range','crown_condition','added_date','modified_date')
     list_filter = ('status','family','genus','crown_condition','modified_year')
 
 @admin.register(Park)
