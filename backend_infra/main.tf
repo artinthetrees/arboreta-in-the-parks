@@ -165,6 +165,18 @@ resource "aws_acm_certificate_validation" "cert" {
 # ==============================================================================
 # CLOUDFRONT DISTRIBUTION
 # ==============================================================================
+# Fetch the managed CachingDisabled policy by its name
+# data "aws_cloudfront_cache_policy" "caching_disabled" {
+#   name = "Managed-CachingDisabled"
+# }
+
+data "aws_cloudfront_cache_policy" "caching_optimized" {
+  name = "Managed-CachingOptimized"
+}
+
+data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
+  name = "Managed-AllViewerExceptHostHeader"
+}
 
 resource "aws_cloudfront_distribution" "cdn" {
   comment = "CDN Fronting the EC2 Web Server Origin"
@@ -190,6 +202,11 @@ resource "aws_cloudfront_distribution" "cdn" {
     #allowed_methods  = ["GET", "HEAD"]
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "EC2-ElasticIP-Origin"
+
+    # # Pass the ID from the data source
+    # cache_policy_id          = data.aws_cloudfront_cache_policy.caching_optimized.id
+    # origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+
 
     forwarded_values {
       query_string = true
