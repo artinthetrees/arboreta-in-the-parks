@@ -1,1 +1,0 @@
-using this tutorial: https://londonappdeveloper.com/how-to-dockerize-a-react-project/

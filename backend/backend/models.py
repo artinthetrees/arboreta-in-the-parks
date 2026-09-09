@@ -19,7 +19,7 @@ class Park(models.Model):
     
 class Tree(models.Model):
     tree_primary_id = models.CharField(null=False, blank=True)
-    tree_id = models.CharField(null=False, blank=True)
+    #tree_id = models.CharField(null=False, blank=True)
     geom = gis_models.PointField(null=True, blank=True)
     status = models.CharField(null=True, blank=True)
     common_name = models.CharField(null=True, blank=True)
@@ -83,3 +83,6 @@ class RestaurantPermit(models.Model):
         self.application_year = self.application_start_date.year
         super(RestaurantPermit, self).save(*args, **kwargs) # Call the "real" save() method.
         self.refresh_from_db()
+
+class Sample(models.Model):
+    attachment = models.FileField()

@@ -31,19 +31,30 @@ class Command(BaseCommand):
                     continue
 
                 try:
-                    # handle case where community area is not provided and is an empty string so can't be directly coerced to integer
+
                     try:
-                        dbh_int = int(row["DBH"])
+                        primary_id_int = int(row["Primary ID"])
+                    except:
+                        primary_id_int = None
+
+                    # try:
+                    #     tree_id_int = int(row["Tree Id"])
+                    # except:
+                    #     tree_id_int = None
+
+                    # handle case where dbh is not provided and is an empty string so can't be directly coerced to integer or is provided as a float (in this case, round to nearest integer)
+                    try:
+                        dbh_int = int(round(float(row["DBH"])))
                     except:
                         dbh_int = None
 
                     try:
-                        added_date=datetime.fromisoformat(row["Date Added"])
+                        added_date = datetime.strptime(row["Date Added"], "%m/%d/%Y")
                     except:
                         added_date = None
 
                     try:
-                        modified_date=datetime.fromisoformat(row["Last Modified"])
+                        modified_date=datetime.strptime(row["Last Modified"], "%m/%d/%Y")
                     except:
                         modified_date = None
 
@@ -54,8 +65,8 @@ class Command(BaseCommand):
                     
                     tree = Tree(
                         
-                        tree_primary_id=row["Primary ID"],
-                        tree_id=row["Tree Id"],
+                        tree_primary_id=primary_id_int,
+                        #tree_id=tree_id_int,
                         geom=location_point,
                         status=row["Status"],
                         common_name=row["Common Name"],

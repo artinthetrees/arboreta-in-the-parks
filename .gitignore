@@ -1,3 +1,10 @@
+data/raw
+/data
+archive/
+TUTORIAL*
+NOTES
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

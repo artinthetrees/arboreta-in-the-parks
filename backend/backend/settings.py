@@ -23,12 +23,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-833v+c%w^wj)01q8g-h@(=kg556u8v!o2_5%yk=(+^43a*4)4n'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = bool(int(os.environ.get('DEBUG', 0)))
 
 ALLOWED_HOSTS = []
+ALLOWED_HOSTS.extend(
+    filter(
+        None,
+        os.environ.get('ALLOWED_HOSTS', '').split(','),
+    )
+)
 
 
 # Application definition
@@ -82,27 +88,59 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+### db setup - update - from tutorial
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': BASE_DIR / 'db.postgis',
+        'HOST': os.environ.get('DB_HOST'),
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASS'),
     }
 }
+###
 
-# Database
-# https://docs.djangoproject.com/en/stable/ref/settings/#databases
+### db setup - update - improvements on tutorial setup suggested by ai
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'HOST': os.environ.get('DB_HOST', 'postgres'),      # Fallback to local container if using Docker
+        'PORT': os.environ.get('DB_PORT', '5432'),          # Standard PostgreSQL port
+        'NAME': os.environ.get('DB_NAME', 'backend'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASS', 'postgres'),
+        'OPTIONS': {
+            # Requires SSL if your previous configuration needed it
+            'sslmode': 'require' if os.environ.get('POSTGRES_REQUIRE_SSL', 'False').lower() in ('true', '1') else 'disable',
+        }
+    }
+}
+###
 
-DATABASES = {}
+### db setup - previously working setup
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.contrib.gis.db.backends.postgis',
+#         'NAME': BASE_DIR / 'db.postgis',
+#     }
+# }
+
+# # Database
+# # https://docs.djangoproject.com/en/stable/ref/settings/#databases
+
+# DATABASES = {}
 
 
-DATABASES["default"] = dj_database_url.parse(
-    os.getenv("DATABASE_URL", "postgres://postgres:postgres@postgres:5432/backend"),
-    conn_max_age=600,
-    ssl_require=os.getenv("POSTGRES_REQUIRE_SSL",False),
-    engine="django.db.backends.postgresql",
-)
+# DATABASES["default"] = dj_database_url.parse(
+#     os.getenv("DATABASE_URL", "postgres://postgres:postgres@postgres:5432/backend"),
+#     conn_max_age=600,
+#     ssl_require=os.getenv("POSTGRES_REQUIRE_SSL",False),
+#     engine="django.db.backends.postgresql",
+# )
 
-DATABASES["default"]["ENGINE"] = "django.contrib.gis.db.backends.postgis"
+# DATABASES["default"]["ENGINE"] = "django.contrib.gis.db.backends.postgis"
+###
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -138,7 +176,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/static/'
+MEDIA_URL = '/static/media/'
+
+MEDIA_ROOT = '/vol/web/media'
+STATIC_ROOT = '/vol/web/static'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
