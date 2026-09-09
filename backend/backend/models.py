@@ -83,3 +83,6 @@ class RestaurantPermit(models.Model):
         self.application_year = self.application_start_date.year
         super(RestaurantPermit, self).save(*args, **kwargs) # Call the "real" save() method.
         self.refresh_from_db()
+
+class Sample(models.Model):
+    attachment = models.FileField()

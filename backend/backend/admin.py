@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.gis import admin as gis_admin
-from backend.models import CommunityArea,RestaurantPermit,Tree,Park
+from backend.models import CommunityArea,RestaurantPermit,Tree,Park,Sample
 
 @admin.register(CommunityArea)
 class CommunityAreaAdmin(admin.ModelAdmin):
@@ -20,5 +20,7 @@ class TreeAdmin(gis_admin.GISModelAdmin):
 class ParkAdmin(gis_admin.GISModelAdmin):
     list_display = ('name','park_id', 'geom')
     #list_filter = ('name')
+
+admin.site.register(Sample)
 
 
