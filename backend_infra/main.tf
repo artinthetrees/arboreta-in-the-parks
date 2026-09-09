@@ -186,8 +186,8 @@ resource "aws_cloudfront_distribution" "cdn" {
   aliases         = [var.subdomain_name]
 
   default_cache_behavior {
-    #allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-    allowed_methods  = ["GET", "HEAD"]
+    allowed_methods = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    #allowed_methods  = ["GET", "HEAD"]
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "EC2-ElasticIP-Origin"
 
