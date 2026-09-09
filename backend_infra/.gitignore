@@ -1,0 +1,17 @@
+# Local directory files (can be highly bulky)
+.terraform/
+
+.terraform.lock.hcl
+
+# State files (contain plain-text secrets)
+*.tfstate
+*.tfstate.*
+
+# Variable files containing active secrets
+*.tfvars
+*.tfvars.json
+
+# Configuration overrides and logs
+override.tf
+override.tf.json
+*.log
