@@ -1,0 +1,53 @@
+
+services:
+  
+  backend:
+    container_name: backend-solo
+    build:
+      context: .
+      dockerfile: Dockerfile.backend.new
+    ports:
+      - 8000:8000
+    volumes:
+      - ./backend:/backend
+      - ./data/web:/vol/web
+    #  - ./data:/backend/data
+    environment:
+      - SECRET_KEY=devsecretkey
+      - DEBUG=1
+      - DB_HOST=postgres
+      - DB_NAME=devdb
+      - DB_USER=devuser
+      - DB_PASS=changeme
+    depends_on:
+      - postgres
+    #   postgres:
+    #     condition: service_healthy
+    command: >
+      sh -c "python manage.py wait_for_db &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    
+  postgres:
+    container_name: backend-solo-postgres
+    image: postgis/postgis
+    # healthcheck:
+    #   test: ["CMD-SHELL", "pg_isready -U postgres"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+    environment:
+      - POSTGRES_DB=devdb
+      - POSTGRES_USER=devuser
+      - POSTGRES_PASSWORD=changeme
+      # POSTGRES_USER: postgres
+      # POSTGRES_PASSWORD: postgres
+      # POSTGRES_DB: backend
+    # volumes:
+    #   - backend-db-data:/var/lib/postgresql
+    # ports:
+    #   - 5432:5432
+
+# volumes:
+#   backend-db-data:
+  
