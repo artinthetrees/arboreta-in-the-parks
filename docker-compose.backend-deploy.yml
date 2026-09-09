@@ -6,6 +6,7 @@ services:
     restart: always
     volumes:
       - static-data:/vol/web
+      - /home/ec2-user/data:/data
     environment:
       - DB_HOST=postgres
       - DB_NAME=${DB_NAME}
