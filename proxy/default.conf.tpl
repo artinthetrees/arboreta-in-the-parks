@@ -4,7 +4,8 @@ server {
     # ensure nginx is set to accept any hostname (using _), or that it explicitly includes your EC2 Public IP/Domain Name
     # Allow any host header (best for testing/debugging)
     # server_name _; 
-    server_name ${EC2_ELASTIC_IP};
+    # server_name ${EC2_ELASTIC_IP};
+    server_name ${CUSTOM_DOMAIN};
 
     # OR explicitly state your domain/IP:
     # server_name ://amazonaws.com 54.xx.xx.xx;
