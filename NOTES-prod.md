@@ -1,4 +1,6 @@
 
+- helpful: https://londonappdeveloper.com/deploying-django-with-docker-compose/
+
 - in ec2 instance, all docker containers up
     - force re-build, ignoring cache: ```docker-compose -f docker-compose.backend-deploy.yml build --no-cache```
     - stop all containers: ```docker-compose -f docker-compose.backend-deploy.yml down --volumes```
