@@ -274,13 +274,22 @@ function ValueCountsTable({ data }) {
 
 function App() {
 
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const appTitle = import.meta.env.VITE_APP_TITLE;
+
+  if (import.meta.env.DEV) {
+    console.log('Running in development mode');
+  }
+
   const [parkNames, setParkNames] = useState([])
-  const parkNamesEndpoint = `http://localhost:8000/park-names`
+  // const parkNamesEndpoint = `http://localhost:8000/park-names`
+  const parkNamesEndpoint = `${apiUrl}/park-names`
 
   const [parkName, setParkName] = useState(null)
   const parkNameApiSafe = parkName ? parkName.replaceAll(" ", "+") : null
   const [treesInParkData, setTreesInParkData] = useState(null)
-  const treesInParkEndpoint = parkName ? `http://localhost:8000/trees-in-park/?name=${parkNameApiSafe}` : null
+  // const treesInParkEndpoint = parkName ? `http://localhost:8000/trees-in-park/?name=${parkNameApiSafe}` : null
+  const treesInParkEndpoint = parkName ? `${apiUrl}/trees-in-park/?name=${parkNameApiSafe}` : null
 
   const mapInitialCenter = [41.88, -87.62]
   const mapInitialZoom = 10
@@ -469,7 +478,8 @@ function App() {
           <img src={sandyStream} className="base" width="170" height="170" alt="" />
         </div> */}
         <div>
-          <h1>Arboreta in the Parks</h1>
+          {/* <h1>Arboreta in the Parks</h1> */}
+          <h1>{appTitle}</h1>
         </div>
         <ParkSelect filterVal={parkName} setFilterVal={setParkName} parkNames={parkNames} />
         {/* <p className="fs-4">
@@ -579,7 +589,7 @@ function App() {
           <p>Find code for this project here:</p>
           <ul>
             <li>
-              <a href="https://github.com/artinthetrees/test" target="_blank">
+              <a href="https://github.com/artinthetrees/arboreta-in-the-parks" target="_blank">
                 <svg
                   className="button-icon"
                   role="presentation"
