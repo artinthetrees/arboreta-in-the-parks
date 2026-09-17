@@ -199,3 +199,10 @@ CORS_ALLOWED_ORIGINS = [
     "https://app.rooteddata.org",
     "https://app-dev.rooteddata.org",
 ]
+
+# # CRITICAL: Add this if your app uses HTTP cookies or authorization headers
+# CORS_ALLOW_CREDENTIALS = True
+
+# # Since CloudFront handles the SSL/TLS decryption, Django needs to know 
+# # the request was originally HTTPS. CloudFront sends the X-Forwarded-Proto header.
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
