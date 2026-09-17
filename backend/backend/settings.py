@@ -197,4 +197,5 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8080",
     # Production Frontend (Must include the 'app.' subdomain)
     "https://app.rooteddata.org",
+    "https://app-dev.rooteddata.org",
 ]
