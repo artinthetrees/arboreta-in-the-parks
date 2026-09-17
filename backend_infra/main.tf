@@ -63,7 +63,8 @@ resource "aws_security_group" "ec2_sg" {
   }
 
   tags = {
-    Name = "ec2-web-security-group"
+    Name        = "${var.environment}-${var.project_name}-ec2-security-group"
+    Environment = var.environment
   }
 }
 
@@ -98,7 +99,8 @@ resource "aws_instance" "web_server" {
   subnet_id              = data.aws_subnets.default.ids[0]
 
   tags = {
-    Name = "web-origin-server"
+    Name        = "${var.environment}-${var.project_name}-ec2-instance"
+    Environment = var.environment
   }
 }
 
@@ -108,8 +110,10 @@ resource "aws_eip" "web_eip" {
   domain   = "vpc"
 
   tags = {
-    Name = "web-server-eip"
+    Name        = "${var.environment}-${var.project_name}-ec2-eip"
+    Environment = var.environment
   }
+
 }
 
 # ==============================================================================
@@ -129,7 +133,8 @@ resource "aws_acm_certificate" "cert" {
   validation_method = "DNS"
 
   tags = {
-    Environment = "production"
+    Name        = "${var.environment}-${var.project_name}-acm-cert"
+    Environment = var.environment
   }
 
   lifecycle {
@@ -179,7 +184,7 @@ data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
 }
 
 resource "aws_cloudfront_distribution" "cdn" {
-  comment = "CDN Fronting the EC2 Web Server Origin"
+  comment = "CDN Fronting the EC2 Instance"
 
   origin {
     domain_name = aws_eip.web_eip.public_dns
@@ -236,7 +241,8 @@ resource "aws_cloudfront_distribution" "cdn" {
   }
 
   tags = {
-    Environment = "production"
+    Name        = "${var.environment}-${var.project_name}-cdn"
+    Environment = var.environment
   }
 }
 
@@ -255,6 +261,7 @@ resource "aws_route53_record" "subdomain_alias" {
     zone_id                = aws_cloudfront_distribution.cdn.hosted_zone_id
     evaluate_target_health = false
   }
+
 }
 
 # ==============================================================================
