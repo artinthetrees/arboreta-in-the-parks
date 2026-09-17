@@ -277,6 +277,9 @@ function App() {
   const apiUrl = import.meta.env.VITE_API_URL;
   const appTitle = import.meta.env.VITE_APP_TITLE;
 
+  console.log(apiUrl);
+  console.log(appTitle);
+
   if (import.meta.env.DEV) {
     console.log('Running in development mode');
   }
