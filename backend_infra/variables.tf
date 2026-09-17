@@ -1,6 +1,7 @@
 variable "environment" { type = string }
 variable "ec2_key_name" { type = string }
 variable "ec2_instance_type" { type = string }
+variable "subdomain_name" { type = string }
 
 variable "region" {
   default = "us-east-2"
@@ -17,9 +18,6 @@ variable "github_user_name" {
   type    = string
 }
 
-variable "subdomain_name" {
-  default = "backend.rooteddata.org"
-  type    = string
-}
+
 
 
