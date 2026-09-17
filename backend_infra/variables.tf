@@ -3,6 +3,10 @@ variable "ec2_key_name" { type = string }
 variable "ec2_instance_type" { type = string }
 variable "subdomain_name" { type = string }
 
+variable "project_name" {
+  default = "arboreta-in-the-parks-backend"
+}
+
 variable "region" {
   default = "us-east-2"
   type    = string
