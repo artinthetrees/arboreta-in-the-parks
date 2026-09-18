@@ -92,12 +92,20 @@ data "aws_ami" "amazon_linux" {
 
 # Launch the compute instance
 resource "aws_instance" "web_server" {
-  ami           = data.aws_ami.amazon_linux.id
+  #ami           = data.aws_ami.amazon_linux.id
+  ami           = var.ami_id
   instance_type = var.ec2_instance_type
   #key_name               = aws_key_pair.deployer.key_name
   key_name               = data.aws_key_pair.ec2_key.key_name
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
   subnet_id              = data.aws_subnets.default.ids[0]
+
+  # let's see if this is required - for now first deal with the issue that the new ec2 is a different ami id
+  # root_block_device {
+  #   volume_type           = "gp3"
+  #   volume_size           = 20 # default for t2.micro linux is 8GB; 8cents per extra GB per month; so adding 12GB means about an extra dollar per month 
+  #   delete_on_termination = true
+  # }
 
   tags = {
     Name        = "${var.environment}-${var.project_name}-ec2-instance"
