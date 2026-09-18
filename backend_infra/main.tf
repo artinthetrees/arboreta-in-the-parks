@@ -26,7 +26,8 @@ data "aws_subnets" "default" {
 
 # Security group mapping ingress/egress rules
 resource "aws_security_group" "ec2_sg" {
-  name        = "ec2-web-sg"
+  #name        = "ec2-web-sg"
+  name_prefix = "ec2-web-sg-"
   description = "Allow incoming SSH, HTTP, and HTTPS traffic"
   vpc_id      = data.aws_vpc.default.id
 
@@ -102,18 +103,38 @@ resource "aws_instance" "web_server" {
     Name        = "${var.environment}-${var.project_name}-ec2-instance"
     Environment = var.environment
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Bind a static public EIP context to the instance
+# UPDATE: instead of hardcoding the association within the eip definition, add an explicit association resource 
+# - this allows the same eip to be detached from the old instance and attached to the new when updating the 
+# instance in a way that requires destroy and recreate
 resource "aws_eip" "web_eip" {
-  instance = aws_instance.web_server.id
-  domain   = "vpc"
+  # UPDATE: comment this out - instead of hard-coding this association, use an explicit association resource
+  # instance = aws_instance.web_server.id
+  domain = "vpc"
 
   tags = {
     Name        = "${var.environment}-${var.project_name}-ec2-eip"
     Environment = var.environment
   }
 
+}
+
+# Explicit Association resource
+resource "aws_eip_association" "eip_assoc" {
+  instance_id   = aws_instance.web_server.id
+  allocation_id = aws_eip.web_eip.id
+
+  # This allows Terraform to detach from the old EC2 
+  # and attach to the new EC2.
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # ==============================================================================
