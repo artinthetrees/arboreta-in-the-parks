@@ -14,6 +14,10 @@ server {
     location / {
         uwsgi_pass              ${APP_HOST}:${APP_PORT};
         include                 /etc/nginx/uwsgi_params;
+
+        # Add this line to pass the browser's origin header cleanly to Django
+        uwsgi_param HTTP_ORIGIN $http_origin;
+
         client_max_body_size    10M;
     }
 }
