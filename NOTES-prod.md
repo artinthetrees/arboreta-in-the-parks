@@ -47,7 +47,12 @@ scp -i path_to_private_ssh_key path_to_data_file_on_local ec2-user@ec2_ip_addres
 ```ssh-keygen -f "C:\Users\Andrea\.ssh\known_hosts" -R "ELASTIC_IP"```
 
 ###################
+- dev frontend
+```docker compose -f docker-compose.frontend.yml up --build --watch```
+- deploy frontend
+```docker compose -f docker-compose.frontend-deploy.yml up --build```
 
-
+###################
+```aws cloudfront create-invalidation --distribution-id CLOUDFRONT_DIST_ID --paths "/*"```
 
 
