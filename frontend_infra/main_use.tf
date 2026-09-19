@@ -3,6 +3,11 @@ resource "aws_s3_bucket" "website_bucket" {
   #bucket = var.bucket_names_list[0]
   bucket = "${var.environment}-${var.project_name}-website-bucket"
 
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-website-bucket"
+    Environment = var.environment
+  }
+
 }
 
 # by default buckets are private but add this just to be explicit
@@ -50,8 +55,8 @@ resource "aws_s3_bucket_policy" "allow_access_from_cloudfront" {
 
 
 resource "aws_cloudfront_origin_access_control" "oac" {
-  name                              = "demo-oac"
-  description                       = "Demo OAC"
+  name                              = "${var.environment}-${var.project_name}-oac"
+  description                       = "OAC for ${var.environment}-${var.project_name}"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
@@ -59,15 +64,15 @@ resource "aws_cloudfront_origin_access_control" "oac" {
 
 resource "aws_s3_object" "object" {
 
-  for_each = fileset("${path.module}/www", "**/*")
+  for_each = fileset("${path.module}/../frontend/dist", "**/*")
   bucket   = aws_s3_bucket.website_bucket.id
   key      = each.value
-  source   = "${path.module}/www/${each.value}"
+  source   = "${path.module}/../frontend/dist/${each.value}"
 
   # The filemd5() function is available in Terraform 0.11.12 and later
   # For Terraform 0.11.11 and earlier, use the md5() function and the file() function:
   # etag = "${md5(file("path/to/file"))}"
-  etag = filemd5("${path.module}/www/${each.value}")
+  etag = filemd5("${path.module}/../frontend/dist/${each.value}")
 
   content_type = lookup({
     "html" = "text/html",
