@@ -6,7 +6,26 @@ import sandyStream from './assets/sandystream.png'
 import './App.css';
 
 import { MapContainer, TileLayer, LayersControl, Marker, Popup, useMap, useMapEvents, GeoJSON, FeatureGroup, Polygon } from "react-leaflet"
+import L from 'leaflet';
+
 import 'leaflet/dist/leaflet.css';
+
+//
+
+// Import icons using Vite's URL asset loader
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+// Delete the broken default internal function and merge the new paths
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+});
+
+//
 
 export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, conditionValues = false }) {
   if (!features || features.length === 0) return <p>No data available</p>;
