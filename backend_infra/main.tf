@@ -234,7 +234,7 @@ resource "aws_cloudfront_distribution" "cdn" {
   default_cache_behavior {
     allowed_methods = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
     #allowed_methods  = ["GET", "HEAD"]
-    cached_methods   = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD", "OPTIONS"]
     target_origin_id = "EC2-ElasticIP-Origin"
 
     # # Pass the ID from the data source
@@ -244,7 +244,7 @@ resource "aws_cloudfront_distribution" "cdn" {
 
     forwarded_values {
       query_string = true
-      headers      = ["Host", "Authorization"] # Pass Host header so EC2 handles multi-site routing if needed
+      headers      = ["Host", "Authorization", "Origin", "Access-Control-Request-Headers", "Access-Control-Request-Method"] # Pass Host header so EC2 handles multi-site routing if needed
 
       cookies {
         forward = "all"
