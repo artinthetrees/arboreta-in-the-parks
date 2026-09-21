@@ -154,8 +154,7 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
   viewer_certificate {
     cloudfront_default_certificate = false
     # Changing this to reference the validation resource forces the correct dependency order (implicit validation)
-    acm_certificate_arn = aws_acm_certificate_validation.app_subdomain_cert_validation.certificate_arn
-    #acm_certificate_arn            = aws_acm_certificate.app_subdomain_cert.arn
+    acm_certificate_arn      = aws_acm_certificate_validation.cert.certificate_arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
@@ -164,11 +163,6 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
     Name        = "${var.environment}-${var.project_name}-cloudfront-dist"
     Environment = var.environment
   }
-}
-
-output "website_url" {
-  description = "The URL of the website served via CloudFront"
-  value       = "https://${aws_cloudfront_distribution.s3_distribution.domain_name}"
 }
 
 ########################################################################## cntd
@@ -247,7 +241,7 @@ resource "aws_route53_record" "subdomain_alias" {
 # ==============================================================================
 
 output "cloudfront_domain_name" {
-  value       = aws_cloudfront_distribution.cdn.domain_name
+  value       = aws_cloudfront_distribution.s3_distribution.domain_name
   description = "The default direct AWS cloudfront edge url topology"
 }
 
