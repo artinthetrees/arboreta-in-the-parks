@@ -1,32 +1,33 @@
 # Terraform Data
-- get ec2 ssh key pair: name of ec2 ssh key pair already imported manually
-- get ec2 ami: latest version of amazon linux 2023 ami
-- get vpc: get default vpc for my aws account
-- get vpc subnets list: get subsets associated with default vpc for my aws account
 - get route53 zone: zone for domain the ec2 will be on (e.g. rooteddata.org)
 
 # Terraform Resources
-- create a ec2 security group 
-    - ingress: 
-        - ssh from anywhere (**ART NOTE**: should change this to just my machine IP for security, though of course it also requires the ssh key file which is on my machine..)
-        - http from anywhere (**ART NOTE**: should change this to just my cloudfront distribution for security)
-        - https from anywhere (**ART NOTE**: should change this to just my cloudfront distribution for security)
-    - egress: 
-        - allow all outbound
+- create s3 bucket to host the app/website
 
-- create a ec2 instance
-    - use ec2 ami from above
-    - associate ec2 ssh key pair from above
-    - associate ec2 security group from above
-    - associate first subnet from vpc subnets list from above
+- create s3 bucket public access block 
+    - apply it to app/website s3 bucket created above
+    - buckets are private access only by default but good to be explicit
 
-- create a elastic ip
-    - bind elastic ip to ec2 instance from above
-    - this means the ec2 instance ip will be static
+- create s3 bucket policy
+    - apply it to the app/website s3 bucket created above
+    - allows only cloudfront distribution we create here to access the s3 bucket
 
+- create cloudfront origin access control
+    - apply it to the cloudfront distribution we will create below
+    - tells the cloudfront dist to sign traffic it forwards to s3 so that the s3 bucket policy above will recognize that the traffic comes from cloudfront (see [here](https://oneuptime.com/blog/post/2026-02-12-cloudfront-origin-access-control-oac-s3/view))
+
+- create s3 object(s)
+    - to upload all frontend static files from npm build to app/website s3 bucket
+
+- create cloudfront distribution
+    - will be "in front of" the s3 bucket so that requests to the s3 bucket will be routed through the cloudfront distribution
+    - set origin to id of website/app s3 bucket from above
+    - set alias to subdomain name you want to use to access the s3 bucket (e.g. app.rooteddata.org)
+    - viewer certificate property depends on acm certificate validation resource we create below; this is an implicit "depends on" so that cloudfront distribution will not be created before acm certificate validation is complete and resource is created
+    
 - request a acm/ssl certificate 
     - request in us-east-1 because cloudfront requires certificate from us-east-1
-    - request it for the subdomain that will be used to access the ec2 (e.g. backend.rooteddata.org)
+    - request it for the subdomain that will be used to access the s3 (e.g. app.rooteddata.org)
     - set validation method to dns
     - set create before destory to true
 
@@ -40,46 +41,20 @@
     - created when requested certificate is issued by acm following confirmation of the validation route53 records by acm
     - **ART NOTE**: ssl cert expires every 90 days; with this setup acm handles the renewal in the background
 
-- create cloudfront distribution
-    - will be "in front of" the ec2 instance so that requests to the ec2 will be routed through the cloudfront distribution
-    - set origin to ec2 elastic ip address from above
-    - set alias to subdomain name you want to use to access the ec2 instance (e.g. backend.rooteddata.org)
-    - viewer certificate property depends on acm certificate validation resource from above; this is an implicit "depends on" so that cloudfront distribution will not be created before acm certificate validation is complete and resource is created
-    - **ART NOTE**: currently allowed methods include put, post, patch, delete; may want to make this more restrictive for security reasons?
-
 - create a route53 record 
-    - A record routing subdomain (e.g. backend.rooteddata.org) to domain name of cloudfront distribution from above
+    - A record routing subdomain (e.g. app.rooteddata.org) to domain name of cloudfront distribution from above
     - together the whole setup means that 
-        - backend.rooteddata.org has an ssl cert, so http or https requests will work
-        - backend.rooteddata.org routes to cloudfront distribution
-        - requests to ec2 elastic ip address or to subdomain (e.g. backend.rooteddata.org) are routed to the cloudfront distribution, which in turn sources and caches from the ec2 
+        - app.rooteddata.org has an ssl cert, so http or https requests will work
+        - app.rooteddata.org routes to cloudfront distribution
+        - requests to subdomain (e.g. app.rooteddata.org) are routed to the cloudfront distribution, which in turn sources and caches from the s3
+        - requests directly to s3 url will not work
 
 # Terraform Outputs
 
-- ec2 public ip
 - cloudfront domain name
 - app url
 
-* all of these should route to the app on the ec2
-* If you want to secure your application and prevent users from bypassing CloudFront (which exposes your raw Elastic IP and can break Django ALLOWED_HOSTS or host header checks), restrict your EC2 security group's inbound HTTP/HTTPS rules to only accept traffic coming from CloudFront (using managed prefix lists) or place your EC2 instance in a private subnet using a VPC origin. [1] (https://www.reddit.com/r/aws/comments/n0cyc6/hosting_several_apis_on_a_single_ec2_instance_and/), [2] (https://www.reddit.com/r/aws/comments/1jjt0wg/is_there_a_way_to_get_ssl_for_my_ec2_instance/) 
-
-
-
-
-
-- 
-- set up route53 hosted zone for rooteddata.org
-    - output nameservers (4)
-    - on namecheap, switch from basic dns to custom dns and add the 4 aws nameserver addresses from output above
-- create route53 records:
-    - A record to direct apex to github pages servers
-    - C record to direct www subdomain to github pages
-    - **NOTE:** I had to [clear my computer DNS cache and restart](https://support.ucsd.edu/services?id=kb_article_view&sysparm_article=KB0033298) before all of above changes would resolve
-    - MX record to direct email to apex domain to google email servers
-    - TXT record (spf) to prevent any email server other than google email server from sending from email at apex domain
-    - TXT record (DKIM) to prevent any email server other than google email server from sending from email at apex domain
-
-- i only used deploy to prod for this set-up so far
+#####################################################################
 
 # Deploy to dev
 
