@@ -1,149 +1,177 @@
-# NOTE: 
-# as part of artinthetrees-infra (general infrastructure), already manually created an ssh key pair and imported it as ec2 key pair into us-east-2 region
 
-# get ec2 ssh key pair already imported into aws by its name
-data "aws_key_pair" "ec2_key" {
-  key_name           = var.ec2_key_name
-  include_public_key = false
-}
-
-# ==============================================================================
-# NETWORKING & SECURITY GROUPS
-# ==============================================================================
-
-# Fetch the default VPC to launch infrastructure
-data "aws_vpc" "default" {
-  default = true
-}
-
-# Fetch default subnets for the instance placement
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
-}
-
-# Security group mapping ingress/egress rules
-resource "aws_security_group" "ec2_sg" {
-  #name        = "ec2-web-sg"
-  name_prefix = "ec2-web-sg-"
-  description = "Allow incoming SSH, HTTP, and HTTPS traffic"
-  vpc_id      = data.aws_vpc.default.id
-
-  ingress {
-    description = "SSH from anywhere"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "HTTP from anywhere"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "HTTPS from anywhere"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    description = "Allow all outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_s3_bucket" "website_bucket" {
+  #bucket = var.bucket_names_list[0]
+  bucket = "${var.environment}-${var.project_name}-website-bucket"
 
   tags = {
-    Name        = "${var.environment}-${var.project_name}-ec2-security-group"
+    Name        = "${var.environment}-${var.project_name}-website-bucket"
     Environment = var.environment
   }
+
 }
 
-# ==============================================================================
-# 3. ACCESS KEY & EC2 COMPUTATION
-# ==============================================================================
+# by default buckets are private but add this just to be explicit
+resource "aws_s3_bucket_public_access_block" "website_bucket_public_access_block" {
+  # adding bucket param is an implicit "depends_on" and ensures that the public access block is added/implemented after the 
+  # bucket is created
+  bucket = aws_s3_bucket.website_bucket.id
 
-# # Local public key path mapping
-# resource "aws_key_pair" "deployer" {
-#   key_name   = "deployer-key"
-#   public_key = file("~/.ssh/id_rsa.pub")
-# }
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
 
-# Fetch latest Amazon Linux 2023 AMI
-data "aws_ami" "amazon_linux" {
-  most_recent = true
-  owners      = ["amazon"]
+resource "aws_s3_bucket_policy" "allow_access_from_cloudfront" {
+  # adding bucket param and adding aws s3 bucket public access block to depends on param here
+  # ensure that this policy will be created after the bucket and the public access block on the bucket
+  # adding the bucket param is an implicit "depends_on"
+  bucket     = aws_s3_bucket.website_bucket.id
+  depends_on = [aws_s3_bucket_public_access_block.website_bucket_public_access_block]
 
-  filter {
-    name   = "name"
-    values = ["al2023-ami-*-x86_64"]
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Sid" : "AllowCloudFrontServicePrincipal",
+        "Effect" : "Allow",
+        "Principal" : {
+          "Service" : "cloudfront.amazonaws.com"
+        },
+        "Action" : [
+          "s3:GetObject"
+        ],
+        "Resource" : "${aws_s3_bucket.website_bucket.arn}/*",
+        "Condition" : {
+          "StringEquals" : {
+            "AWS:SourceArn" = aws_cloudfront_distribution.s3_distribution.arn
+          }
+        }
+      }
+    ]
+  })
+}
+
+
+
+resource "aws_cloudfront_origin_access_control" "oac" {
+  name                              = "${var.environment}-${var.project_name}-oac"
+  description                       = "OAC for ${var.environment}-${var.project_name}"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+resource "aws_s3_object" "object" {
+
+  for_each = fileset("${path.module}/../frontend/dist", "**/*")
+  bucket   = aws_s3_bucket.website_bucket.id
+  key      = each.value
+  source   = "${path.module}/../frontend/dist/${each.value}"
+
+  # The filemd5() function is available in Terraform 0.11.12 and later
+  # For Terraform 0.11.11 and earlier, use the md5() function and the file() function:
+  # etag = "${md5(file("path/to/file"))}"
+  etag = filemd5("${path.module}/../frontend/dist/${each.value}")
+
+  content_type = lookup({
+    "html" = "text/html",
+    "css"  = "text/css",
+    "js"   = "application/javascript",
+    "json" = "application/json",
+    "png"  = "image/png",
+    "jpg"  = "image/jpg",
+    "jpeg" = "image/jpeg",
+    "gif"  = "image/gif",
+    "svg"  = "image/svg+xml",
+    "ico"  = "image/x-icon",
+    "txt"  = "text/plain"
+    },
+    split(".", each.value)[length(split(".", each.value)) - 1],
+    "application/octet-stream"
+  )
+}
+
+locals {
+  origin_id = "S3-${aws_s3_bucket.website_bucket.id}"
+}
+
+resource "aws_cloudfront_distribution" "s3_distribution" {
+  origin {
+    domain_name              = aws_s3_bucket.website_bucket.bucket_regional_domain_name
+    origin_access_control_id = aws_cloudfront_origin_access_control.oac.id
+    origin_id                = local.origin_id
   }
-}
 
-# Launch the compute instance
-resource "aws_instance" "web_server" {
-  #ami           = data.aws_ami.amazon_linux.id
-  ami           = var.ami_id
-  instance_type = var.ec2_instance_type
-  #key_name               = aws_key_pair.deployer.key_name
-  key_name               = data.aws_key_pair.ec2_key.key_name
-  vpc_security_group_ids = [aws_security_group.ec2_sg.id]
-  subnet_id              = data.aws_subnets.default.ids[0]
+  enabled             = true
+  is_ipv6_enabled     = true
+  comment             = "CDN fronting the S3 website/app bucket"
+  default_root_object = "index.html"
 
-  # let's see if this is required - for now first deal with the issue that the new ec2 is a different ami id
-  # root_block_device {
-  #   volume_type           = "gp3"
-  #   volume_size           = 20 # default for t2.micro linux is 8GB; 8cents per extra GB per month; so adding 12GB means about an extra dollar per month 
-  #   delete_on_termination = true
+  #aliases = ["mysite.${local.my_domain}", "yoursite.${local.my_domain}"]
+
+  default_cache_behavior {
+    #allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = local.origin_id
+
+    forwarded_values {
+      query_string = false
+
+      cookies {
+        forward = "none"
+      }
+    }
+
+    #viewer_protocol_policy = "allow-all"
+    viewer_protocol_policy = "redirect-to-https"
+    min_ttl                = 0
+    default_ttl            = 3600
+    max_ttl                = 86400 # ttl are the times the data will be cached in the edge locations
+  }
+
+  price_class = "PriceClass_100"
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+      # restriction_type = "whitelist"
+      # locations        = ["US", "CA", "GB", "DE"]
+    }
+  }
+
+  # viewer_certificate {
+  #   # acm_certificate_arn = data.aws_acm_certificate.my_domain.arn
+  #   # ssl_support_method  = "sni-only"
+  #   cloudfront_default_certificate = true
   # }
 
-  tags = {
-    Name        = "${var.environment}-${var.project_name}-ec2-instance"
-    Environment = var.environment
-  }
+  # Add your alternate subdomains here
+  #aliases = ["app.${var.domain_name}"]
+  aliases = [var.subdomain_name]
 
-  lifecycle {
-    create_before_destroy = true
+  viewer_certificate {
+    cloudfront_default_certificate = false
+    # Changing this to reference the validation resource forces the correct dependency order (implicit validation)
+    acm_certificate_arn = aws_acm_certificate_validation.app_subdomain_cert_validation.certificate_arn
+    #acm_certificate_arn            = aws_acm_certificate.app_subdomain_cert.arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
   }
-}
-
-# Bind a static public EIP context to the instance
-# UPDATE: instead of hardcoding the association within the eip definition, add an explicit association resource 
-# - this allows the same eip to be detached from the old instance and attached to the new when updating the 
-# instance in a way that requires destroy and recreate
-resource "aws_eip" "web_eip" {
-  # UPDATE: comment this out - instead of hard-coding this association, use an explicit association resource
-  # instance = aws_instance.web_server.id
-  domain = "vpc"
 
   tags = {
-    Name        = "${var.environment}-${var.project_name}-ec2-eip"
+    Name        = "${var.environment}-${var.project_name}-cloudfront-dist"
     Environment = var.environment
   }
-
 }
 
-# Explicit Association resource
-resource "aws_eip_association" "eip_assoc" {
-  instance_id   = aws_instance.web_server.id
-  allocation_id = aws_eip.web_eip.id
-
-  # This allows Terraform to detach from the old EC2 
-  # and attach to the new EC2.
-  lifecycle {
-    create_before_destroy = true
-  }
+output "website_url" {
+  description = "The URL of the website served via CloudFront"
+  value       = "https://${aws_cloudfront_distribution.s3_distribution.domain_name}"
 }
+
+########################################################################## cntd
 
 # ==============================================================================
 # ROUTE 53 DNS & SSL CERTIFICATE (ACM)
@@ -197,85 +225,6 @@ resource "aws_acm_certificate_validation" "cert" {
 }
 
 # ==============================================================================
-# CLOUDFRONT DISTRIBUTION
-# ==============================================================================
-# Fetch the managed CachingDisabled policy by its name
-# data "aws_cloudfront_cache_policy" "caching_disabled" {
-#   name = "Managed-CachingDisabled"
-# }
-
-data "aws_cloudfront_cache_policy" "caching_optimized" {
-  name = "Managed-CachingOptimized"
-}
-
-data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
-  name = "Managed-AllViewerExceptHostHeader"
-}
-
-resource "aws_cloudfront_distribution" "cdn" {
-  comment = "CDN Fronting the EC2 Instance"
-
-  origin {
-    domain_name = aws_eip.web_eip.public_dns
-    origin_id   = "EC2-ElasticIP-Origin"
-
-    custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "http-only" # Change to "match-viewer" if EC2 runs SSL locally
-      origin_ssl_protocols   = ["TLSv1.2"]
-    }
-  }
-
-  enabled         = true
-  is_ipv6_enabled = true
-  aliases         = [var.subdomain_name]
-
-  default_cache_behavior {
-    allowed_methods = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-    #allowed_methods  = ["GET", "HEAD"]
-    cached_methods   = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id = "EC2-ElasticIP-Origin"
-
-    # # Pass the ID from the data source
-    # cache_policy_id          = data.aws_cloudfront_cache_policy.caching_optimized.id
-    # origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
-
-
-    forwarded_values {
-      query_string = true
-      headers      = ["Host", "Authorization", "Origin", "Access-Control-Request-Headers", "Access-Control-Request-Method"] # Pass Host header so EC2 handles multi-site routing if needed
-
-      cookies {
-        forward = "all"
-      }
-    }
-
-    viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    default_ttl            = 3600
-    max_ttl                = 86400
-  }
-
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
-    }
-  }
-
-  viewer_certificate {
-    acm_certificate_arn      = aws_acm_certificate_validation.cert.certificate_arn
-    ssl_support_method       = "sni-only"
-    minimum_protocol_version = "TLSv1.2_2021"
-  }
-
-  tags = {
-    Name        = "${var.environment}-${var.project_name}-cdn"
-    Environment = var.environment
-  }
-}
-
-# ==============================================================================
 # ROUTE 53 ALIAS TARGET LINK
 # ==============================================================================
 
@@ -286,8 +235,8 @@ resource "aws_route53_record" "subdomain_alias" {
   type    = "A"
 
   alias {
-    name                   = aws_cloudfront_distribution.cdn.domain_name
-    zone_id                = aws_cloudfront_distribution.cdn.hosted_zone_id
+    name                   = aws_cloudfront_distribution.s3_distribution.domain_name
+    zone_id                = aws_cloudfront_distribution.s3_distribution.hosted_zone_id
     evaluate_target_health = false
   }
 
@@ -296,11 +245,6 @@ resource "aws_route53_record" "subdomain_alias" {
 # ==============================================================================
 # OUTPUTS
 # ==============================================================================
-
-output "ec2_public_ip" {
-  value       = aws_eip.web_eip.public_ip
-  description = "The allocated static Elastic IP binding of the server"
-}
 
 output "cloudfront_domain_name" {
   value       = aws_cloudfront_distribution.cdn.domain_name
@@ -313,4 +257,48 @@ output "app_url" {
 }
 
 
+# ######## acm certificate
+
+# resource "aws_acm_certificate" "app_subdomain_cert" {
+#   #domain_name       = "app.${var.domain_name}"
+#   domain_name       = var.subdomain_name
+#   validation_method = "DNS"
+
+#   # use the alias us-east-1 provider set up just for certificates because cloudfront always runs in us east 1 and required cert to be created in us east 1
+#   provider = aws.us_east_1
+
+#   tags = {
+#     Name        = "${var.environment}-${var.project_name}-website-bucket"
+#     Environment = var.environment
+#   }
+
+#   lifecycle {
+#     create_before_destroy = true
+#   }
+
+# }
+
+# # This resource forces Terraform to wait until validation is successful
+# resource "aws_acm_certificate_validation" "app_subdomain_cert_validation" {
+#   certificate_arn = aws_acm_certificate.app_subdomain_cert.arn
+
+#   # use the alias us-east-1 provider set up just for certificates because cloudfront always runs in us east 1 and required cert to be created in us east 1
+#   provider = aws.us_east_1
+
+#   # Normally you pass route53 records here, but since you are using Namecheap,
+#   # leave the `validation_record_fqdns` argument OUT completely.
+# }
+
+# # Output the CNAME values needed for ACM validation
+# output "acm_validation_records" {
+#   value = {
+#     for dvo in aws_acm_certificate.app_subdomain_cert.domain_validation_options : dvo.domain_name => {
+#       name  = dvo.resource_record_name
+#       type  = dvo.resource_record_type
+#       value = dvo.resource_record_value
+#     }
+#   }
+# }
+
+########
 
