@@ -31,6 +31,9 @@ DEBUG = bool(int(os.environ.get('DEBUG', 0)))
 CSRF_TRUSTED_ORIGINS = ['http://rooteddata.org', 'https://rooteddata.org', 'http://*.rooteddata.org', 'https://*.rooteddata.org']
 #CSRF_TRUSTED_ORIGINS = ['http://yourdomain.com', 'https://yourdomain.com', 'http://*.yourdomain.com', 'https://*.yourdomain.com']
 
+# Tells Django to look at X-Forwarded-Host for ALLOWED_HOSTS validation
+USE_X_FORWARDED_HOST = True
+
 ALLOWED_HOSTS = []
 ALLOWED_HOSTS.extend(
     filter(

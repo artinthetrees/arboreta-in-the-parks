@@ -15,6 +15,12 @@ server {
         uwsgi_pass              ${APP_HOST}:${APP_PORT};
         include                 /etc/nginx/uwsgi_params;
 
+        # Map the custom CloudFront header down into uWSGI's host evaluation parameter
+        uwsgi_param HTTP_HOST $http_x_forwarded_host; 
+        
+        uwsgi_param HTTP_X_FORWARDED_PROTO $http_x_forwarded_proto;
+        uwsgi_param HTTP_X_FORWARDED_FOR $proxy_add_x_forwarded_for;
+        
         # Add this line to pass the browser's origin header cleanly to Django
         uwsgi_param HTTP_ORIGIN $http_origin;
 
