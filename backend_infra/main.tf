@@ -200,17 +200,21 @@ resource "aws_acm_certificate_validation" "cert" {
 # CLOUDFRONT DISTRIBUTION
 # ==============================================================================
 # Fetch the managed CachingDisabled policy by its name
-# data "aws_cloudfront_cache_policy" "caching_disabled" {
-#   name = "Managed-CachingDisabled"
-# }
-
-data "aws_cloudfront_cache_policy" "caching_optimized" {
-  name = "Managed-CachingOptimized"
+data "aws_cloudfront_cache_policy" "caching_disabled" {
+  name = "Managed-CachingDisabled"
 }
+
+# data "aws_cloudfront_cache_policy" "caching_optimized" {
+#   name = "Managed-CachingOptimized"
+# }
 
 data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
   name = "Managed-AllViewerExceptHostHeader"
 }
+
+# data "aws_cloudfront_origin_request_policy" "all_viewer" {
+#   name = "Managed-AllViewer"
+# }
 
 resource "aws_cloudfront_distribution" "cdn" {
   comment = "CDN Fronting the EC2 Instance"
@@ -225,6 +229,12 @@ resource "aws_cloudfront_distribution" "cdn" {
       origin_protocol_policy = "http-only" # Change to "match-viewer" if EC2 runs SSL locally
       origin_ssl_protocols   = ["TLSv1.2"]
     }
+
+    # ADD THIS: CloudFront injects the domain name safely into a custom header
+    custom_header {
+      name  = "X-Forwarded-Host"
+      value = var.subdomain_name # e.g., backend-dev.rooteddata.org
+    }
   }
 
   enabled         = true
@@ -238,23 +248,33 @@ resource "aws_cloudfront_distribution" "cdn" {
     target_origin_id = "EC2-ElasticIP-Origin"
 
     # # Pass the ID from the data source
-    # cache_policy_id          = data.aws_cloudfront_cache_policy.caching_optimized.id
-    # origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+    #cache_policy_id          = data.aws_cloudfront_cache_policy.caching_optimized.id
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+
+    # COMPLETELY DISABLE CACHING FOR THE BACKEND API
+    # Uses AWS Managed Policy: CachingDisabled (4135ea2d-6df8-44a3-9df3-4b5a84be39ad)
+    # cache_policy_id = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+
+    # FORWARD ALL HEADERS, COOKIES, & QUERY STRINGS EXCEPT THE HOST HEADER
+    # Uses AWS Managed Policy: AllViewerExceptHostHeader (b689b0a8-53d0-40ab-baf2-68002d296205)
+    # This sends Origin, Authorization, and Referer straight to Django for security validation
+    # origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68002d296205"
 
 
-    forwarded_values {
-      query_string = true
-      headers      = ["Host", "Authorization", "Origin", "Access-Control-Request-Headers", "Access-Control-Request-Method"] # Pass Host header so EC2 handles multi-site routing if needed
+    # forwarded_values {
+    #   query_string = true
+    #   headers      = ["Host", "Authorization", "Origin", "Access-Control-Request-Headers", "Access-Control-Request-Method"] # Pass Host header so EC2 handles multi-site routing if needed
 
-      cookies {
-        forward = "all"
-      }
-    }
+    #   cookies {
+    #     forward = "all"
+    #   }
+    # }
 
     viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    default_ttl            = 3600
-    max_ttl                = 86400
+    # min_ttl                = 0
+    # default_ttl            = 3600
+    # max_ttl                = 86400
   }
 
   restrictions {
