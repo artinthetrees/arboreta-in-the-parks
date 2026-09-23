@@ -320,6 +320,12 @@ function App() {
 
   // set up a useEffect hook to run a fetch of park names list any time the site reloads
   useEffect(() => {
+    // Guard clause: Stop immediately if the URL is invalid, null, or contains "null"
+    if (!parkNamesEndpoint || parkNamesEndpoint.includes('null') || parkNamesEndpoint.includes('undefined')) {
+      console.warn('Skipping fetch: parkNamesEndpoint is not ready or is invalid:', parkNamesEndpoint);
+      return;
+    }
+
     fetch(parkNamesEndpoint)
       .then((res) => {
         console.log('Status:', res.status);
@@ -330,7 +336,7 @@ function App() {
         setParkNames(data);
       })
       .catch(error => console.error('Error:', error)); // Log errors
-  }, [])
+  }, [parkNamesEndpoint])
 
   // set up a useEffect hook to run a fetch of trees in park data any time the trees in park endpoint (really the park name) const changes
   useEffect(() => {
