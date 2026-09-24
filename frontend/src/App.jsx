@@ -6,7 +6,26 @@ import sandyStream from './assets/sandystream.png'
 import './App.css';
 
 import { MapContainer, TileLayer, LayersControl, Marker, Popup, useMap, useMapEvents, GeoJSON, FeatureGroup, Polygon } from "react-leaflet"
+import L from 'leaflet';
+
 import 'leaflet/dist/leaflet.css';
+
+//
+
+// Import icons using Vite's URL asset loader
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+// Delete the broken default internal function and merge the new paths
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+});
+
+//
 
 export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, conditionValues = false }) {
   if (!features || features.length === 0) return <p>No data available</p>;
@@ -274,13 +293,25 @@ function ValueCountsTable({ data }) {
 
 function App() {
 
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const appTitle = import.meta.env.VITE_APP_TITLE;
+
+  console.log(apiUrl);
+  console.log(appTitle);
+
+  if (import.meta.env.DEV) {
+    console.log('Running in development mode');
+  }
+
   const [parkNames, setParkNames] = useState([])
-  const parkNamesEndpoint = `http://localhost:8000/park-names`
+  // const parkNamesEndpoint = `http://localhost:8000/park-names`
+  const parkNamesEndpoint = `${apiUrl}/park-names`
 
   const [parkName, setParkName] = useState(null)
   const parkNameApiSafe = parkName ? parkName.replaceAll(" ", "+") : null
   const [treesInParkData, setTreesInParkData] = useState(null)
-  const treesInParkEndpoint = parkName ? `http://localhost:8000/trees-in-park/?name=${parkNameApiSafe}` : null
+  // const treesInParkEndpoint = parkName ? `http://localhost:8000/trees-in-park/?name=${parkNameApiSafe}` : null
+  const treesInParkEndpoint = parkName ? `${apiUrl}/trees-in-park/?name=${parkNameApiSafe}` : null
 
   const mapInitialCenter = [41.88, -87.62]
   const mapInitialZoom = 10
@@ -289,6 +320,12 @@ function App() {
 
   // set up a useEffect hook to run a fetch of park names list any time the site reloads
   useEffect(() => {
+    // Guard clause: Stop immediately if the URL is invalid, null, or contains "null"
+    if (!parkNamesEndpoint || parkNamesEndpoint.includes('null') || parkNamesEndpoint.includes('undefined')) {
+      console.warn('Skipping fetch: parkNamesEndpoint is not ready or is invalid:', parkNamesEndpoint);
+      return;
+    }
+
     fetch(parkNamesEndpoint)
       .then((res) => {
         console.log('Status:', res.status);
@@ -299,7 +336,7 @@ function App() {
         setParkNames(data);
       })
       .catch(error => console.error('Error:', error)); // Log errors
-  }, [])
+  }, [parkNamesEndpoint])
 
   // set up a useEffect hook to run a fetch of trees in park data any time the trees in park endpoint (really the park name) const changes
   useEffect(() => {
@@ -469,7 +506,8 @@ function App() {
           <img src={sandyStream} className="base" width="170" height="170" alt="" />
         </div> */}
         <div>
-          <h1>Arboreta in the Parks</h1>
+          {/* <h1>Arboreta in the Parks</h1> */}
+          <h1>{appTitle}</h1>
         </div>
         <ParkSelect filterVal={parkName} setFilterVal={setParkName} parkNames={parkNames} />
         {/* <p className="fs-4">
@@ -579,7 +617,7 @@ function App() {
           <p>Find code for this project here:</p>
           <ul>
             <li>
-              <a href="https://github.com/artinthetrees/test" target="_blank">
+              <a href="https://github.com/artinthetrees/arboreta-in-the-parks" target="_blank">
                 <svg
                   className="button-icon"
                   role="presentation"

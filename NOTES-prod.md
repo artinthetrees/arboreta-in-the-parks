@@ -40,4 +40,19 @@ scp -i path_to_private_ssh_key path_to_data_file_on_local ec2-user@ec2_ip_addres
 
 ``` docker-compose -f docker-compose.backend-deploy.yml run --rm backend sh -c "python manage.py load_parks ../data/raw/CPD_Parks_20260722.geojson"```
 
+###################
+- i needed to destroy and recreate dev ec2 because had to replace ami
+- on attempting to ssh into the recreated ec2 i got a security alert - it's happening because the host key associated with the same elastic ip had changed and that could be indicative of a "man in the middle" attack
+- to get around this security notice:
+```ssh-keygen -f "C:\Users\Andrea\.ssh\known_hosts" -R "ELASTIC_IP"```
+
+###################
+- dev frontend
+```docker compose -f docker-compose.frontend.yml up --build --watch```
+- deploy frontend
+```docker compose -f docker-compose.frontend-deploy.yml up --build```
+
+###################
+```aws cloudfront create-invalidation --distribution-id CLOUDFRONT_DIST_ID --paths "/*"```
+
 

@@ -26,7 +26,8 @@ data "aws_subnets" "default" {
 
 # Security group mapping ingress/egress rules
 resource "aws_security_group" "ec2_sg" {
-  name        = "ec2-web-sg"
+  #name        = "ec2-web-sg"
+  name_prefix = "ec2-web-sg-"
   description = "Allow incoming SSH, HTTP, and HTTPS traffic"
   vpc_id      = data.aws_vpc.default.id
 
@@ -63,7 +64,8 @@ resource "aws_security_group" "ec2_sg" {
   }
 
   tags = {
-    Name = "ec2-web-security-group"
+    Name        = "${var.environment}-${var.project_name}-ec2-security-group"
+    Environment = var.environment
   }
 }
 
@@ -90,25 +92,56 @@ data "aws_ami" "amazon_linux" {
 
 # Launch the compute instance
 resource "aws_instance" "web_server" {
-  ami           = data.aws_ami.amazon_linux.id
+  #ami           = data.aws_ami.amazon_linux.id
+  ami           = var.ami_id
   instance_type = var.ec2_instance_type
   #key_name               = aws_key_pair.deployer.key_name
   key_name               = data.aws_key_pair.ec2_key.key_name
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
   subnet_id              = data.aws_subnets.default.ids[0]
 
+  # let's see if this is required - for now first deal with the issue that the new ec2 is a different ami id
+  # root_block_device {
+  #   volume_type           = "gp3"
+  #   volume_size           = 20 # default for t2.micro linux is 8GB; 8cents per extra GB per month; so adding 12GB means about an extra dollar per month 
+  #   delete_on_termination = true
+  # }
+
   tags = {
-    Name = "web-origin-server"
+    Name        = "${var.environment}-${var.project_name}-ec2-instance"
+    Environment = var.environment
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
 # Bind a static public EIP context to the instance
+# UPDATE: instead of hardcoding the association within the eip definition, add an explicit association resource 
+# - this allows the same eip to be detached from the old instance and attached to the new when updating the 
+# instance in a way that requires destroy and recreate
 resource "aws_eip" "web_eip" {
-  instance = aws_instance.web_server.id
-  domain   = "vpc"
+  # UPDATE: comment this out - instead of hard-coding this association, use an explicit association resource
+  # instance = aws_instance.web_server.id
+  domain = "vpc"
 
   tags = {
-    Name = "web-server-eip"
+    Name        = "${var.environment}-${var.project_name}-ec2-eip"
+    Environment = var.environment
+  }
+
+}
+
+# Explicit Association resource
+resource "aws_eip_association" "eip_assoc" {
+  instance_id   = aws_instance.web_server.id
+  allocation_id = aws_eip.web_eip.id
+
+  # This allows Terraform to detach from the old EC2 
+  # and attach to the new EC2.
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -129,7 +162,8 @@ resource "aws_acm_certificate" "cert" {
   validation_method = "DNS"
 
   tags = {
-    Environment = "production"
+    Name        = "${var.environment}-${var.project_name}-acm-cert"
+    Environment = var.environment
   }
 
   lifecycle {
@@ -166,20 +200,24 @@ resource "aws_acm_certificate_validation" "cert" {
 # CLOUDFRONT DISTRIBUTION
 # ==============================================================================
 # Fetch the managed CachingDisabled policy by its name
-# data "aws_cloudfront_cache_policy" "caching_disabled" {
-#   name = "Managed-CachingDisabled"
-# }
-
-data "aws_cloudfront_cache_policy" "caching_optimized" {
-  name = "Managed-CachingOptimized"
+data "aws_cloudfront_cache_policy" "caching_disabled" {
+  name = "Managed-CachingDisabled"
 }
+
+# data "aws_cloudfront_cache_policy" "caching_optimized" {
+#   name = "Managed-CachingOptimized"
+# }
 
 data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
   name = "Managed-AllViewerExceptHostHeader"
 }
 
+# data "aws_cloudfront_origin_request_policy" "all_viewer" {
+#   name = "Managed-AllViewer"
+# }
+
 resource "aws_cloudfront_distribution" "cdn" {
-  comment = "CDN Fronting the EC2 Web Server Origin"
+  comment = "CDN Fronting the EC2 Instance"
 
   origin {
     domain_name = aws_eip.web_eip.public_dns
@@ -191,6 +229,12 @@ resource "aws_cloudfront_distribution" "cdn" {
       origin_protocol_policy = "http-only" # Change to "match-viewer" if EC2 runs SSL locally
       origin_ssl_protocols   = ["TLSv1.2"]
     }
+
+    # ADD THIS: CloudFront injects the domain name safely into a custom header
+    custom_header {
+      name  = "X-Forwarded-Host"
+      value = var.subdomain_name # e.g., backend-dev.rooteddata.org
+    }
   }
 
   enabled         = true
@@ -200,27 +244,37 @@ resource "aws_cloudfront_distribution" "cdn" {
   default_cache_behavior {
     allowed_methods = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
     #allowed_methods  = ["GET", "HEAD"]
-    cached_methods   = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD", "OPTIONS"]
     target_origin_id = "EC2-ElasticIP-Origin"
 
     # # Pass the ID from the data source
-    # cache_policy_id          = data.aws_cloudfront_cache_policy.caching_optimized.id
-    # origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+    #cache_policy_id          = data.aws_cloudfront_cache_policy.caching_optimized.id
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+
+    # COMPLETELY DISABLE CACHING FOR THE BACKEND API
+    # Uses AWS Managed Policy: CachingDisabled (4135ea2d-6df8-44a3-9df3-4b5a84be39ad)
+    # cache_policy_id = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+
+    # FORWARD ALL HEADERS, COOKIES, & QUERY STRINGS EXCEPT THE HOST HEADER
+    # Uses AWS Managed Policy: AllViewerExceptHostHeader (b689b0a8-53d0-40ab-baf2-68002d296205)
+    # This sends Origin, Authorization, and Referer straight to Django for security validation
+    # origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68002d296205"
 
 
-    forwarded_values {
-      query_string = true
-      headers      = ["Host", "Authorization"] # Pass Host header so EC2 handles multi-site routing if needed
+    # forwarded_values {
+    #   query_string = true
+    #   headers      = ["Host", "Authorization", "Origin", "Access-Control-Request-Headers", "Access-Control-Request-Method"] # Pass Host header so EC2 handles multi-site routing if needed
 
-      cookies {
-        forward = "all"
-      }
-    }
+    #   cookies {
+    #     forward = "all"
+    #   }
+    # }
 
     viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    default_ttl            = 3600
-    max_ttl                = 86400
+    # min_ttl                = 0
+    # default_ttl            = 3600
+    # max_ttl                = 86400
   }
 
   restrictions {
@@ -236,7 +290,8 @@ resource "aws_cloudfront_distribution" "cdn" {
   }
 
   tags = {
-    Environment = "production"
+    Name        = "${var.environment}-${var.project_name}-cdn"
+    Environment = var.environment
   }
 }
 
@@ -255,6 +310,7 @@ resource "aws_route53_record" "subdomain_alias" {
     zone_id                = aws_cloudfront_distribution.cdn.hosted_zone_id
     evaluate_target_health = false
   }
+
 }
 
 # ==============================================================================

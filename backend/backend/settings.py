@@ -15,6 +15,9 @@ import os
 
 import dj_database_url
 
+# If you use custom headers, ensure Django accepts them
+from corsheaders.defaults import default_headers
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -30,6 +33,9 @@ DEBUG = bool(int(os.environ.get('DEBUG', 0)))
 
 CSRF_TRUSTED_ORIGINS = ['http://rooteddata.org', 'https://rooteddata.org', 'http://*.rooteddata.org', 'https://*.rooteddata.org']
 #CSRF_TRUSTED_ORIGINS = ['http://yourdomain.com', 'https://yourdomain.com', 'http://*.yourdomain.com', 'https://*.yourdomain.com']
+
+# Tells Django to look at X-Forwarded-Host for ALLOWED_HOSTS validation
+USE_X_FORWARDED_HOST = True
 
 ALLOWED_HOSTS = []
 ALLOWED_HOSTS.extend(
@@ -57,10 +63,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -193,4 +199,21 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    # Production Frontend (Must include the 'app.' subdomain)
+    "https://app.rooteddata.org",
+    "https://app-dev.rooteddata.org",
 ]
+
+# # CRITICAL: Add this if your app uses HTTP cookies or authorization headers
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "content-type",
+    "authorization",
+]
+
+# # Since CloudFront handles the SSL/TLS decryption, Django needs to know 
+# # the request was originally HTTPS. CloudFront sends the X-Forwarded-Proto header.
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

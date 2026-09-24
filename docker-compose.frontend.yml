@@ -1,0 +1,38 @@
+
+services:
+  frontend:
+    container_name: frontend
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend.new
+      target: development
+    ports:
+      - 5173:5173
+    # remove this from the "solo" version of docker compose that only builds the frontend - 
+    # this is only relevant for the combined docker compose that builds both backend and frontend
+    # depends_on:
+    #   - backend
+    develop:
+      # watch only syncs from local to container, can't do the other way
+      watch:
+        - action: sync
+          path: ./frontend/
+          target: /frontend
+          ignore:
+            - node_modules
+        # # Automatically rebuilds the container if you change your configuration - ART NOTE: should i add this?
+        # - action: rebuild
+        #   path: package.json
+
+# services:
+#   web:
+#     build:
+#       context: .
+#       target: development
+#     ports:
+#       - "5173:5173"
+#     volumes:
+#       - .:/app
+#       - /app/node_modules
+
+  

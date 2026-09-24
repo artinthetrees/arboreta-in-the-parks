@@ -1,0 +1,31 @@
+
+services:
+  frontend:
+    container_name: frontend
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend.new
+      target: production
+    # ports:
+    #   - 5173:5173
+    # remove this from the "solo" version of docker compose that only builds the frontend - 
+    # this is only relevant for the combined docker compose that builds both backend and frontend
+    # depends_on:
+    #   - backend
+    volumes:
+      # Required: Pulls the container's generated build back into your local machine
+      - ./frontend/dist:/frontend/dist
+
+
+# ADD THIS SERVICE TO TEST THE DIST FOLDER
+  preview-server:
+    image: nginx:alpine
+    ports:
+      - 8080:80
+    volumes:
+      # This mounts your local dist folder directly into Nginx's HTML root
+      - ./frontend/dist:/usr/share/nginx/html:ro
+    depends_on:
+      frontend:
+        condition: service_completed_successfully
+  
