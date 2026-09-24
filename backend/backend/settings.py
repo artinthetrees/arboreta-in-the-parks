@@ -15,6 +15,9 @@ import os
 
 import dj_database_url
 
+# If you use custom headers, ensure Django accepts them
+from corsheaders.defaults import default_headers
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -60,10 +63,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -204,7 +207,12 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 # # CRITICAL: Add this if your app uses HTTP cookies or authorization headers
-# CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "content-type",
+    "authorization",
+]
 
 # # Since CloudFront handles the SSL/TLS decryption, Django needs to know 
 # # the request was originally HTTPS. CloudFront sends the X-Forwarded-Proto header.
