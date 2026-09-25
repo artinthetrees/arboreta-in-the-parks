@@ -305,13 +305,13 @@ function App() {
 
   const [parkNames, setParkNames] = useState([])
   // const parkNamesEndpoint = `http://localhost:8000/park-names`
-  const parkNamesEndpoint = `${apiUrl}/park-names`
+  const parkNamesEndpoint = `${apiUrl}/park-names/`
 
   const [parkName, setParkName] = useState(null)
   const parkNameApiSafe = parkName ? parkName.replaceAll(" ", "+") : null
   const [treesInParkData, setTreesInParkData] = useState(null)
   // const treesInParkEndpoint = parkName ? `http://localhost:8000/trees-in-park/?name=${parkNameApiSafe}` : null
-  const treesInParkEndpoint = parkName ? `${apiUrl}/trees-in-park/?name=${parkNameApiSafe}` : null
+  const treesInParkEndpoint = parkName ? `${apiUrl}/trees-in-park/?name=${parkNameApiSafe}/` : null
 
   const mapInitialCenter = [41.88, -87.62]
   const mapInitialZoom = 10
