@@ -24,50 +24,130 @@ data "aws_subnets" "default" {
   }
 }
 
-# Security group mapping ingress/egress rules
+# Fetch the AWS-managed CloudFront Prefix Lists - 
+# getting these to limit incoming http/https traffic to cloudfront prefixes
+data "aws_ec2_managed_prefix_list" "cloudfront_ipv4" {
+  name = "com.amazonaws.global.cloudfront.origin-facing"
+}
+
+data "aws_ec2_managed_prefix_list" "cloudfront_ipv6" {
+  name = "com.amazonaws.global.ipv6.cloudfront.origin-facing"
+}
+
+# Base Security Group Container
 resource "aws_security_group" "ec2_sg" {
-  #name        = "ec2-web-sg"
   name_prefix = "ec2-web-sg-"
-  description = "Allow incoming SSH, HTTP, and HTTPS traffic"
+  description = "Allow incoming SSH, and restricted CloudFront HTTP/HTTPS traffic"
   vpc_id      = data.aws_vpc.default.id
-
-  ingress {
-    description = "SSH from anywhere"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "HTTP from anywhere"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "HTTPS from anywhere"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    description = "Allow all outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   tags = {
     Name        = "${var.environment}-${var.project_name}-ec2-security-group"
     Environment = var.environment
   }
 }
+
+# Rule 1: SSH from anywhere (Keeping your original rule)
+resource "aws_vpc_security_group_ingress_rule" "ssh" {
+  security_group_id = aws_security_group.ec2_sg.id
+  description       = "SSH from anywhere"
+  from_port         = 22
+  to_port           = 22
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+# Rule 2: HTTP (Port 80) from CloudFront IPv4 Edge Locations
+resource "aws_vpc_security_group_ingress_rule" "http_cloudfront_ipv4" {
+  security_group_id = aws_security_group.ec2_sg.id
+  description       = "HTTP from CloudFront IPv4"
+  from_port         = 80
+  to_port           = 80
+  ip_protocol       = "tcp"
+  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_ipv4.id
+}
+
+# Rule 3: HTTP (Port 80) from CloudFront IPv6 Edge Locations
+resource "aws_vpc_security_group_ingress_rule" "http_cloudfront_ipv6" {
+  security_group_id = aws_security_group.ec2_sg.id
+  description       = "HTTP from CloudFront IPv6"
+  from_port         = 80
+  to_port           = 80
+  ip_protocol       = "tcp"
+  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_ipv6.id
+}
+
+# Rule 4: HTTPS (Port 443) from CloudFront IPv4 Edge Locations
+resource "aws_vpc_security_group_ingress_rule" "https_cloudfront_ipv4" {
+  security_group_id = aws_security_group.ec2_sg.id
+  description       = "HTTPS from CloudFront IPv4"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_ipv4.id
+}
+
+# Rule 5: HTTPS (Port 443) from CloudFront IPv6 Edge Locations
+resource "aws_vpc_security_group_ingress_rule" "https_cloudfront_ipv6" {
+  security_group_id = aws_security_group.ec2_sg.id
+  description       = "HTTPS from CloudFront IPv6"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_ipv6.id
+}
+
+# Rule 6: Outbound (Allow all traffic out)
+resource "aws_vpc_security_group_egress_rule" "all_outbound" {
+  security_group_id = aws_security_group.ec2_sg.id
+  description       = "Allow all outbound traffic"
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+# # Security group mapping ingress/egress rules
+# resource "aws_security_group" "ec2_sg" {
+#   #name        = "ec2-web-sg"
+#   name_prefix = "ec2-web-sg-"
+#   description = "Allow incoming SSH, HTTP, and HTTPS traffic"
+#   vpc_id      = data.aws_vpc.default.id
+
+#   ingress {
+#     description = "SSH from anywhere"
+#     from_port   = 22
+#     to_port     = 22
+#     protocol    = "tcp"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   ingress {
+#     description = "HTTP from anywhere"
+#     from_port   = 80
+#     to_port     = 80
+#     protocol    = "tcp"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   ingress {
+#     description = "HTTPS from anywhere"
+#     from_port   = 443
+#     to_port     = 443
+#     protocol    = "tcp"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   egress {
+#     description = "Allow all outbound traffic"
+#     from_port   = 0
+#     to_port     = 0
+#     protocol    = "-1"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   tags = {
+#     Name        = "${var.environment}-${var.project_name}-ec2-security-group"
+#     Environment = var.environment
+#   }
+# }
 
 # ==============================================================================
 # 3. ACCESS KEY & EC2 COMPUTATION
