@@ -55,4 +55,7 @@ scp -i path_to_private_ssh_key path_to_data_file_on_local ec2-user@ec2_ip_addres
 ###################
 ```aws cloudfront create-invalidation --distribution-id CLOUDFRONT_DIST_ID --paths "/*"```
 
+####################
+
+```aws ec2-instance-connect ssh --instance-id i-1234567890abcdef0 --os-user ec2-user```
 
