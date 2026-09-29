@@ -2,10 +2,11 @@
 # as part of artinthetrees-infra (general infrastructure), already manually created an ssh key pair and imported it as ec2 key pair into us-east-2 region
 
 # get ec2 ssh key pair already imported into aws by its name
-data "aws_key_pair" "ec2_key" {
-  key_name           = var.ec2_key_name
-  include_public_key = false
-}
+# shouldn't need this anymore if using ec2 instance connect
+# data "aws_key_pair" "ec2_key" {
+#   key_name           = var.ec2_key_name
+#   include_public_key = false
+# }
 
 # ==============================================================================
 # NETWORKING & SECURITY GROUPS
@@ -34,6 +35,11 @@ data "aws_ec2_managed_prefix_list" "cloudfront_ipv6" {
   name = "com.amazonaws.global.ipv6.cloudfront.origin-facing"
 }
 
+# getting these to limit incoming ssh traffic to ec2 instance connect prefixes
+data "aws_ec2_managed_prefix_list" "instance_connect" {
+  name = "com.amazonaws.us-east-1.ec2-instance-connect"
+}
+
 # Base Security Group Container
 resource "aws_security_group" "ec2_sg" {
   name_prefix = "ec2-web-sg-"
@@ -47,13 +53,13 @@ resource "aws_security_group" "ec2_sg" {
 }
 
 # Rule 1: SSH from anywhere (Keeping your original rule)
-resource "aws_vpc_security_group_ingress_rule" "ssh" {
+resource "aws_vpc_security_group_ingress_rule" "ssh_ec2_instance_connect" {
   security_group_id = aws_security_group.ec2_sg.id
-  description       = "SSH from anywhere"
+  description       = "SSH from EC2 Instance Connect"
   from_port         = 22
   to_port           = 22
   ip_protocol       = "tcp"
-  cidr_ipv4         = "0.0.0.0/0"
+  prefix_list_id    = data.aws_ec2_managed_prefix_list.instance_connect.id
 }
 
 # Rule 2: HTTP (Port 80) from CloudFront IPv4 Edge Locations
@@ -153,12 +159,6 @@ resource "aws_vpc_security_group_egress_rule" "all_outbound" {
 # 3. ACCESS KEY & EC2 COMPUTATION
 # ==============================================================================
 
-# # Local public key path mapping
-# resource "aws_key_pair" "deployer" {
-#   key_name   = "deployer-key"
-#   public_key = file("~/.ssh/id_rsa.pub")
-# }
-
 # Fetch latest Amazon Linux 2023 AMI
 data "aws_ami" "amazon_linux" {
   most_recent = true
@@ -175,8 +175,8 @@ resource "aws_instance" "web_server" {
   #ami           = data.aws_ami.amazon_linux.id
   ami           = var.ami_id
   instance_type = var.ec2_instance_type
-  #key_name               = aws_key_pair.deployer.key_name
-  key_name               = data.aws_key_pair.ec2_key.key_name
+  # no longer need this if using ec2 instance connect to ssh - provides temp ssh keys instead
+  #key_name               = data.aws_key_pair.ec2_key.key_name
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
   subnet_id              = data.aws_subnets.default.ids[0]
 
@@ -190,6 +190,7 @@ resource "aws_instance" "web_server" {
   tags = {
     Name        = "${var.environment}-${var.project_name}-ec2-instance"
     Environment = var.environment
+    AllowSSH    = "true"
   }
 
   lifecycle {
