@@ -317,7 +317,7 @@ function App() {
 
   // set up a useEffect hook to run a fetch of park names list any time the site reloads
   useEffect(() => {
-    // Guard clause: Stop immediately if the URL is invalid, null, or contains "null"
+    // Guard clause: Stop immediately if the URL is null
     if (!parkNamesEndpoint) {
       console.warn('Skipping fetch: parkNamesEndpoint is not ready or is invalid:', parkNamesEndpoint);
       return;
