@@ -1,8 +1,6 @@
 data/raw
 /data
 archive/
-TUTORIAL*
-NOTES
 private_notes/
 
 
@@ -252,6 +250,9 @@ web_modules/
 
 .env.development
 .env.production
+
+**/*.env*
+!**/*.env*.sample
 
 
 # parcel-bundler cache (https://parceljs.org/)

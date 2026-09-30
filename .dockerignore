@@ -6,6 +6,8 @@
 
 #env
 **/.env
+**/*.env*
+!**/*.env*.sample
 
 #Dockerfile.backend
 
@@ -38,3 +40,5 @@ venv/
 
 # Local PostgreSQL data
 data/
+
+private_notes/
