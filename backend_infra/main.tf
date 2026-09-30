@@ -37,7 +37,7 @@ data "aws_ec2_managed_prefix_list" "cloudfront_ipv6" {
 
 # getting these to limit incoming ssh traffic to ec2 instance connect prefixes
 data "aws_ec2_managed_prefix_list" "instance_connect" {
-  name = "com.amazonaws.us-east-1.ec2-instance-connect"
+  name = "com.amazonaws.${var.region}.ec2-instance-connect"
 }
 
 # Base Security Group Container
