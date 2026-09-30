@@ -137,7 +137,7 @@ resource "aws_vpc_security_group_ingress_rule" "ssh_ec2_instance_connect" {
 
 # Rule 2: HTTP (Port 80) from CloudFront IPv4 Edge Locations
 resource "aws_vpc_security_group_ingress_rule" "http_cloudfront_ipv4" {
-  security_group_id = aws_security_group.ec2_sg_http_ipv4
+  security_group_id = aws_security_group.ec2_sg_http_ipv4.id
   description       = "HTTP from CloudFront IPv4"
   from_port         = 80
   to_port           = 80
@@ -152,7 +152,7 @@ resource "aws_vpc_security_group_ingress_rule" "http_cloudfront_ipv4" {
 
 # Rule 3: HTTP (Port 80) from CloudFront IPv6 Edge Locations
 resource "aws_vpc_security_group_ingress_rule" "http_cloudfront_ipv6" {
-  security_group_id = aws_security_group.ec2_sg_http_ipv6
+  security_group_id = aws_security_group.ec2_sg_http_ipv6.id
   description       = "HTTP from CloudFront IPv6"
   from_port         = 80
   to_port           = 80
@@ -167,7 +167,7 @@ resource "aws_vpc_security_group_ingress_rule" "http_cloudfront_ipv6" {
 
 # Rule 4: HTTPS (Port 443) from CloudFront IPv4 Edge Locations
 resource "aws_vpc_security_group_ingress_rule" "https_cloudfront_ipv4" {
-  security_group_id = aws_security_group.ec2_sg_https_ipv4
+  security_group_id = aws_security_group.ec2_sg_https_ipv4.id
   description       = "HTTPS from CloudFront IPv4"
   from_port         = 443
   to_port           = 443
@@ -182,7 +182,7 @@ resource "aws_vpc_security_group_ingress_rule" "https_cloudfront_ipv4" {
 
 # Rule 5: HTTPS (Port 443) from CloudFront IPv6 Edge Locations
 resource "aws_vpc_security_group_ingress_rule" "https_cloudfront_ipv6" {
-  security_group_id = aws_security_group.ec2_sg_https_ipv6
+  security_group_id = aws_security_group.ec2_sg_https_ipv6.id
   description       = "HTTPS from CloudFront IPv6"
   from_port         = 443
   to_port           = 443
@@ -197,7 +197,7 @@ resource "aws_vpc_security_group_ingress_rule" "https_cloudfront_ipv6" {
 
 # Rule 6: Outbound (Allow all traffic out)
 resource "aws_vpc_security_group_egress_rule" "all_outbound" {
-  security_group_id = aws_security_group.ec2_sg_egress
+  security_group_id = aws_security_group.ec2_sg_egress.id
   description       = "Allow all outbound traffic"
   ip_protocol       = "-1"
   cidr_ipv4         = "0.0.0.0/0"
@@ -257,16 +257,17 @@ resource "aws_vpc_security_group_egress_rule" "all_outbound" {
 # 3. ACCESS KEY & EC2 COMPUTATION
 # ==============================================================================
 
-# Fetch latest Amazon Linux 2023 AMI
-data "aws_ami" "amazon_linux" {
-  most_recent = true
-  owners      = ["amazon"]
+# NOTE: shifted to using ami id hardcoded as a var - don't need this anymore
+# # Fetch latest Amazon Linux 2023 AMI
+# data "aws_ami" "amazon_linux" {
+#   most_recent = true
+#   owners      = ["amazon"]
 
-  filter {
-    name   = "name"
-    values = ["al2023-ami-*-x86_64"]
-  }
-}
+#   filter {
+#     name   = "name"
+#     values = ["al2023-ami-*-x86_64"]
+#   }
+# }
 
 # Launch the compute instance
 resource "aws_instance" "web_server" {
@@ -280,12 +281,12 @@ resource "aws_instance" "web_server" {
   # comment out line below when ready to implement
   # key_name = ""
   vpc_security_group_ids = [
-    aws_security_group.ec2_sg_ssh,
-    aws_security_group.ec2_sg_http_ipv4,
-    aws_security_group.ec2_sg_http_ipv6,
-    aws_security_group.ec2_sg_https_ipv4,
-    aws_security_group.ec2_sg_https_ipv6,
-    aws_security_group.ec2_sg_egress
+    aws_security_group.ec2_sg_ssh.id,
+    aws_security_group.ec2_sg_http_ipv4.id,
+    aws_security_group.ec2_sg_http_ipv6.id,
+    aws_security_group.ec2_sg_https_ipv4.id,
+    aws_security_group.ec2_sg_https_ipv6.id,
+    aws_security_group.ec2_sg_egress.id
   ]
   subnet_id = data.aws_subnets.default.ids[0]
 
