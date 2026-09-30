@@ -60,6 +60,11 @@ resource "aws_vpc_security_group_ingress_rule" "ssh_ec2_instance_connect" {
   to_port           = 22
   ip_protocol       = "tcp"
   prefix_list_id    = data.aws_ec2_managed_prefix_list.instance_connect.id
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sg-ingress-ssh"
+    Environment = var.environment
+  }
 }
 
 # Rule 2: HTTP (Port 80) from CloudFront IPv4 Edge Locations
@@ -70,6 +75,11 @@ resource "aws_vpc_security_group_ingress_rule" "http_cloudfront_ipv4" {
   to_port           = 80
   ip_protocol       = "tcp"
   prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_ipv4.id
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sg-ingress-http-ipv4"
+    Environment = var.environment
+  }
 }
 
 # Rule 3: HTTP (Port 80) from CloudFront IPv6 Edge Locations
@@ -80,6 +90,11 @@ resource "aws_vpc_security_group_ingress_rule" "http_cloudfront_ipv6" {
   to_port           = 80
   ip_protocol       = "tcp"
   prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_ipv6.id
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sg-ingress-http-ipv6"
+    Environment = var.environment
+  }
 }
 
 # Rule 4: HTTPS (Port 443) from CloudFront IPv4 Edge Locations
@@ -90,6 +105,11 @@ resource "aws_vpc_security_group_ingress_rule" "https_cloudfront_ipv4" {
   to_port           = 443
   ip_protocol       = "tcp"
   prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_ipv4.id
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sg-ingress-https-ipv4"
+    Environment = var.environment
+  }
 }
 
 # Rule 5: HTTPS (Port 443) from CloudFront IPv6 Edge Locations
@@ -100,6 +120,11 @@ resource "aws_vpc_security_group_ingress_rule" "https_cloudfront_ipv6" {
   to_port           = 443
   ip_protocol       = "tcp"
   prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_ipv6.id
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sg-ingress-https-ipv6"
+    Environment = var.environment
+  }
 }
 
 # Rule 6: Outbound (Allow all traffic out)
@@ -108,6 +133,11 @@ resource "aws_vpc_security_group_egress_rule" "all_outbound" {
   description       = "Allow all outbound traffic"
   ip_protocol       = "-1"
   cidr_ipv4         = "0.0.0.0/0"
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sg-egress"
+    Environment = var.environment
+  }
 }
 
 # # Security group mapping ingress/egress rules
