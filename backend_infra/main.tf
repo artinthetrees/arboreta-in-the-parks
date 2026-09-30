@@ -47,15 +47,17 @@ data "aws_ec2_managed_prefix_list" "instance_connect" {
 
 ## EC2 Security Groups ##
 ## NOTE: need multiple because max 60 rules per group, each prefix counts as a rule, 55 cloudfront prefixes (used to restrict http/https ipv4 and ivp6 - 55 x 4), 2 ec2 instance connect prefixes (used to restrict ssh)
+## NOTE: max of 5 security groups allowed per EC2 instance
+## NOTE: max of 1000 security group rules allowed per EC2 instance across all attached security groups
 
-# EC2 Security Group 1: SSH
-resource "aws_security_group" "ec2_sg_ssh" {
-  name_prefix = "ec2-sg-ssh-"
-  description = "Allow incoming SSH traffic restricted to ec2 instance connect prefixes"
+# EC2 Security Group 1: SSH ingress and egress
+resource "aws_security_group" "ec2_sg_ssh_and_egress" {
+  name_prefix = "ec2-sg-ssh-and-egress-"
+  description = "Allow incoming SSH traffic restricted to ec2 instance connect prefixes; Allow all outgoing traffic"
   vpc_id      = data.aws_vpc.default.id
 
   tags = {
-    Name        = "${var.environment}-${var.project_name}-ec2-sg-ssh"
+    Name        = "${var.environment}-${var.project_name}-ec2-sg-ssh-and-egress"
     Environment = var.environment
   }
 }
@@ -108,21 +110,10 @@ resource "aws_security_group" "ec2_sg_https_ipv6" {
   }
 }
 
-# EC2 Security Group 6: Egress
-resource "aws_security_group" "ec2_sg_egress" {
-  name_prefix = "ec2-sg-agress-"
-  description = "Allow all outgoing traffic"
-  vpc_id      = data.aws_vpc.default.id
-
-  tags = {
-    Name        = "${var.environment}-${var.project_name}-ec2-sg-egress"
-    Environment = var.environment
-  }
-}
-
 # Rule 1: SSH from anywhere (Keeping your original rule)
 resource "aws_vpc_security_group_ingress_rule" "ssh_ec2_instance_connect" {
-  security_group_id = aws_security_group.ec2_sg_ssh.id
+  #security_group_id = aws_security_group.ec2_sg_ssh.id
+  security_group_id = aws_security_group.ec2_sg_ssh_and_egress.id
   description       = "SSH from EC2 Instance Connect"
   from_port         = 22
   to_port           = 22
@@ -197,7 +188,8 @@ resource "aws_vpc_security_group_ingress_rule" "https_cloudfront_ipv6" {
 
 # Rule 6: Outbound (Allow all traffic out)
 resource "aws_vpc_security_group_egress_rule" "all_outbound" {
-  security_group_id = aws_security_group.ec2_sg_egress.id
+  #security_group_id = aws_security_group.ec2_sg_egress.id
+  security_group_id = aws_security_group.ec2_sg_ssh_and_egress.id
   description       = "Allow all outbound traffic"
   ip_protocol       = "-1"
   cidr_ipv4         = "0.0.0.0/0"
