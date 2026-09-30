@@ -43,7 +43,7 @@ data "aws_ec2_managed_prefix_list" "instance_connect" {
 # Base Security Group Container
 resource "aws_security_group" "ec2_sg" {
   name_prefix = "ec2-web-sg-"
-  description = "Allow incoming SSH, and restricted CloudFront HTTP/HTTPS traffic"
+  description = "Allow incoming SSH traffic restricted to ec2 instance connect prefixes, and HTTP/HTTPS traffic restricted to cloudfront prefixes"
   vpc_id      = data.aws_vpc.default.id
 
   tags = {
@@ -176,7 +176,11 @@ resource "aws_instance" "web_server" {
   ami           = var.ami_id
   instance_type = var.ec2_instance_type
   # no longer need this if using ec2 instance connect to ssh - provides temp ssh keys instead
-  #key_name               = data.aws_key_pair.ec2_key.key_name
+  # key_name               = data.aws_key_pair.ec2_key.key_name
+  # TODO: apparently need to explicitly set key_name to empty string to delete it from the instance
+  # however that will force destroy/recreate of the instance - let's first test other updates, then work on deleting key pair from instance
+  # comment out line below when ready to implement
+  # key_name = ""
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
   subnet_id              = data.aws_subnets.default.ids[0]
 
