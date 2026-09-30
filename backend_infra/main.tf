@@ -273,12 +273,11 @@ resource "aws_instance" "web_server" {
   # comment out line below when ready to implement
   # key_name = ""
   vpc_security_group_ids = [
-    aws_security_group.ec2_sg_ssh.id,
+    aws_security_group.ec2_sg_ssh_and_egress.id,
     aws_security_group.ec2_sg_http_ipv4.id,
     aws_security_group.ec2_sg_http_ipv6.id,
     aws_security_group.ec2_sg_https_ipv4.id,
-    aws_security_group.ec2_sg_https_ipv6.id,
-    aws_security_group.ec2_sg_egress.id
+    aws_security_group.ec2_sg_https_ipv6.id
   ]
   subnet_id = data.aws_subnets.default.ids[0]
 
