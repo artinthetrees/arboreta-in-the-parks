@@ -130,7 +130,7 @@ resource "aws_vpc_security_group_ingress_rule" "ssh_ec2_instance_connect" {
   prefix_list_id    = data.aws_ec2_managed_prefix_list.instance_connect.id
 
   tags = {
-    Name        = "${var.environment}-${var.project_name}-ec2-sg-ingress-ssh"
+    Name        = "${var.environment}-${var.project_name}-ec2-sgr-ingress-ssh"
     Environment = var.environment
   }
 }
@@ -145,7 +145,7 @@ resource "aws_vpc_security_group_ingress_rule" "http_cloudfront_ipv4" {
   prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_ipv4.id
 
   tags = {
-    Name        = "${var.environment}-${var.project_name}-ec2-sg-ingress-http-ipv4"
+    Name        = "${var.environment}-${var.project_name}-ec2-sgr-ingress-http-ipv4"
     Environment = var.environment
   }
 }
@@ -160,7 +160,7 @@ resource "aws_vpc_security_group_ingress_rule" "http_cloudfront_ipv6" {
   prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_ipv6.id
 
   tags = {
-    Name        = "${var.environment}-${var.project_name}-ec2-sg-ingress-http-ipv6"
+    Name        = "${var.environment}-${var.project_name}-ec2-sgr-ingress-http-ipv6"
     Environment = var.environment
   }
 }
@@ -175,7 +175,7 @@ resource "aws_vpc_security_group_ingress_rule" "https_cloudfront_ipv4" {
   prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_ipv4.id
 
   tags = {
-    Name        = "${var.environment}-${var.project_name}-ec2-sg-ingress-https-ipv4"
+    Name        = "${var.environment}-${var.project_name}-ec2-sgr-ingress-https-ipv4"
     Environment = var.environment
   }
 }
@@ -190,7 +190,7 @@ resource "aws_vpc_security_group_ingress_rule" "https_cloudfront_ipv6" {
   prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_ipv6.id
 
   tags = {
-    Name        = "${var.environment}-${var.project_name}-ec2-sg-ingress-https-ipv6"
+    Name        = "${var.environment}-${var.project_name}-ec2-sgr-ingress-https-ipv6"
     Environment = var.environment
   }
 }
@@ -203,7 +203,7 @@ resource "aws_vpc_security_group_egress_rule" "all_outbound" {
   cidr_ipv4         = "0.0.0.0/0"
 
   tags = {
-    Name        = "${var.environment}-${var.project_name}-ec2-sg-egress"
+    Name        = "${var.environment}-${var.project_name}-ec2-sgr-egress"
     Environment = var.environment
   }
 }
