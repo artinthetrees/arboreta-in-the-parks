@@ -23,7 +23,7 @@ from backend.views import hello_world, MapDataView, tree_geojson, TreesInParkVie
 
 urlpatterns = [
     path("trees/",tree_geojson, name="trees"),
-    path("park-names/", ParkNamesView.as_view(), name="trees_in_parks_data"),
+    path("park-names/", ParkNamesView.as_view(), name="park_names"),
     path("trees-in-parks/", TreesInParksView.as_view(), name="trees_in_parks_data"),
     path("trees-in-park/", TreesInParkView.as_view(), name="trees_in_park_data"),
     path("map-data/", MapDataView.as_view(), name="map_data"),

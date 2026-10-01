@@ -1,15 +1,8 @@
-# NOTE: 
-# as part of artinthetrees-infra (general infrastructure), already manually created an ssh key pair and imported it as ec2 key pair into us-east-2 region
-
-# get ec2 ssh key pair already imported into aws by its name
-data "aws_key_pair" "ec2_key" {
-  key_name           = var.ec2_key_name
-  include_public_key = false
-}
-
 # ==============================================================================
 # NETWORKING & SECURITY GROUPS
 # ==============================================================================
+
+## VPC and Subnets ##
 
 # Fetch the default VPC to launch infrastructure
 data "aws_vpc" "default" {
@@ -24,81 +17,319 @@ data "aws_subnets" "default" {
   }
 }
 
-# Security group mapping ingress/egress rules
-resource "aws_security_group" "ec2_sg" {
-  #name        = "ec2-web-sg"
-  name_prefix = "ec2-web-sg-"
-  description = "Allow incoming SSH, HTTP, and HTTPS traffic"
+locals {
+  first_subnet_id = data.aws_subnets.default.ids[0]
+}
+
+## EC2 Instance Connect Endpoint ##
+## EC2 Instance Connect Endpoint Security Group ##
+
+# Create a security group dedicated strictly to the EICE proxy
+resource "aws_security_group" "eice_sg" {
+  name        = "eice-security-group"
+  description = "Controls access for EC2 Instance Connect Endpoint"
   vpc_id      = data.aws_vpc.default.id
 
-  ingress {
-    description = "SSH from anywhere"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "HTTP from anywhere"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "HTTPS from anywhere"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    description = "Allow all outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   tags = {
-    Name        = "${var.environment}-${var.project_name}-ec2-security-group"
+    Name        = "${var.environment}-${var.project_name}-eice-sg"
     Environment = var.environment
   }
 }
+
+resource "aws_vpc_security_group_egress_rule" "eice_to_vpc_ssh" {
+  security_group_id = aws_security_group.eice_sg.id
+
+  # Allows the endpoint to send SSH traffic out to instances inside the VPC CIDR
+  cidr_ipv4   = data.aws_vpc.default.cidr_block
+  from_port   = 22
+  to_port     = 22
+  ip_protocol = "tcp"
+}
+
+# Deploy the EICE Endpoint proxy into your chosen subnet
+resource "aws_ec2_instance_connect_endpoint" "eice_for_default_vpc" {
+  subnet_id          = local.first_subnet_id
+  security_group_ids = [aws_security_group.eice_sg.id]
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-eice-for-default-vpc"
+    Environment = var.environment
+  }
+}
+
+## EC2 Security Groups ##
+## NOTE: need multiple because max 60 rules per group, each prefix counts as a rule, 55 cloudfront prefixes (used to restrict http/https ipv4 and ivp6 - 55 x 4), 2 ec2 instance connect prefixes (used to restrict ssh)
+## NOTE: max of 5 security groups allowed per EC2 instance
+## NOTE: max of 1000 security group rules allowed per EC2 instance across all attached security groups
+
+# Fetch the AWS-managed CloudFront Prefix Lists - 
+# getting these to limit incoming http/https traffic to cloudfront prefixes
+
+# this is a list of 55 prefixes - only 60 allowed per security group
+data "aws_ec2_managed_prefix_list" "cloudfront_ipv4" {
+  name = "com.amazonaws.global.cloudfront.origin-facing"
+}
+
+# this is a list of 55 prefixes - only 60 allowed per security group
+data "aws_ec2_managed_prefix_list" "cloudfront_ipv6" {
+  name = "com.amazonaws.global.ipv6.cloudfront.origin-facing"
+}
+
+# getting these to limit incoming ssh traffic to ec2 instance connect prefixes
+
+# this is a list of 2 prefixes - only 60 allowed per security group
+data "aws_ec2_managed_prefix_list" "instance_connect" {
+  name = "com.amazonaws.${var.region}.ec2-instance-connect"
+}
+
+# EC2 Security Group 1: SSH ingress and egress
+resource "aws_security_group" "ec2_sg_ssh_and_egress" {
+  name_prefix = "ec2-sg-ssh-and-egress-"
+  description = "Allow incoming SSH traffic restricted to ec2 instance connect prefixes; Allow all outgoing traffic"
+  vpc_id      = data.aws_vpc.default.id
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sg-ssh-and-egress"
+    Environment = var.environment
+  }
+}
+
+# EC2 Security Group 2: HTTP ivp4
+resource "aws_security_group" "ec2_sg_http_ipv4" {
+  name_prefix = "ec2-sg-http-ipv4-"
+  description = "Allow incoming HTTP ipv4 traffic restricted to cloudfront prefixes"
+  vpc_id      = data.aws_vpc.default.id
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sg-http-ipv4"
+    Environment = var.environment
+  }
+}
+
+# EC2 Security Group 3: HTTP ivp6
+resource "aws_security_group" "ec2_sg_http_ipv6" {
+  name_prefix = "ec2-sg-http-ipv6-"
+  description = "Allow incoming HTTP ipv6 traffic restricted to cloudfront prefixes"
+  vpc_id      = data.aws_vpc.default.id
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sg-http-ipv6"
+    Environment = var.environment
+  }
+}
+
+# EC2 Security Group 4: HTTPS ivp4
+resource "aws_security_group" "ec2_sg_https_ipv4" {
+  name_prefix = "ec2-sg-https-ipv4-"
+  description = "Allow incoming HTTPS ipv4 traffic restricted to cloudfront prefixes"
+  vpc_id      = data.aws_vpc.default.id
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sg-https-ipv4"
+    Environment = var.environment
+  }
+}
+
+# EC2 Security Group 5: HTTPS ivp6
+resource "aws_security_group" "ec2_sg_https_ipv6" {
+  name_prefix = "ec2-sg-https-ipv6-"
+  description = "Allow incoming HTTPS ipv6 traffic restricted to cloudfront prefixes"
+  vpc_id      = data.aws_vpc.default.id
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sg-https-ipv6"
+    Environment = var.environment
+  }
+}
+
+# Rule 1: SSH from EICE only
+# resource "aws_vpc_security_group_ingress_rule" "ssh_ec2_instance_connect" {
+#   #security_group_id = aws_security_group.ec2_sg_ssh.id
+#   security_group_id = aws_security_group.ec2_sg_ssh_and_egress.id
+#   description       = "SSH from EC2 Instance Connect"
+#   from_port         = 22
+#   to_port           = 22
+#   ip_protocol       = "tcp"
+#   prefix_list_id    = data.aws_ec2_managed_prefix_list.instance_connect.id
+
+#   tags = {
+#     Name        = "${var.environment}-${var.project_name}-ec2-sgr-ingress-ssh"
+#     Environment = var.environment
+#   }
+# }
+
+resource "aws_vpc_security_group_ingress_rule" "allow_ssh_from_eice" {
+  # EC2 security group
+  security_group_id = aws_security_group.ec2_sg_ssh_and_egress.id
+
+  # EICE security group - referenced_security_group_id holds the id of the source security group that is referenced in the rule.
+  referenced_security_group_id = aws_security_group.eice_sg.id
+
+  description = "SSH from EC2 Instance Connect Endpoint"
+  from_port   = 22
+  to_port     = 22
+  ip_protocol = "tcp"
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sgr-ingress-ssh"
+    Environment = var.environment
+  }
+}
+
+# Rule 2: HTTP (Port 80) from CloudFront IPv4 Edge Locations
+resource "aws_vpc_security_group_ingress_rule" "http_cloudfront_ipv4" {
+  security_group_id = aws_security_group.ec2_sg_http_ipv4.id
+  description       = "HTTP from CloudFront IPv4"
+  from_port         = 80
+  to_port           = 80
+  ip_protocol       = "tcp"
+  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_ipv4.id
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sgr-ingress-http-ipv4"
+    Environment = var.environment
+  }
+}
+
+# Rule 3: HTTP (Port 80) from CloudFront IPv6 Edge Locations
+resource "aws_vpc_security_group_ingress_rule" "http_cloudfront_ipv6" {
+  security_group_id = aws_security_group.ec2_sg_http_ipv6.id
+  description       = "HTTP from CloudFront IPv6"
+  from_port         = 80
+  to_port           = 80
+  ip_protocol       = "tcp"
+  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_ipv6.id
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sgr-ingress-http-ipv6"
+    Environment = var.environment
+  }
+}
+
+# Rule 4: HTTPS (Port 443) from CloudFront IPv4 Edge Locations
+resource "aws_vpc_security_group_ingress_rule" "https_cloudfront_ipv4" {
+  security_group_id = aws_security_group.ec2_sg_https_ipv4.id
+  description       = "HTTPS from CloudFront IPv4"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_ipv4.id
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sgr-ingress-https-ipv4"
+    Environment = var.environment
+  }
+}
+
+# Rule 5: HTTPS (Port 443) from CloudFront IPv6 Edge Locations
+resource "aws_vpc_security_group_ingress_rule" "https_cloudfront_ipv6" {
+  security_group_id = aws_security_group.ec2_sg_https_ipv6.id
+  description       = "HTTPS from CloudFront IPv6"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_ipv6.id
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sgr-ingress-https-ipv6"
+    Environment = var.environment
+  }
+}
+
+# Rule 6: Outbound (Allow all traffic out)
+resource "aws_vpc_security_group_egress_rule" "all_outbound" {
+  #security_group_id = aws_security_group.ec2_sg_egress.id
+  security_group_id = aws_security_group.ec2_sg_ssh_and_egress.id
+  description       = "Allow all outbound traffic"
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-ec2-sgr-egress"
+    Environment = var.environment
+  }
+}
+
+# # Security group mapping ingress/egress rules
+# resource "aws_security_group" "ec2_sg" {
+#   #name        = "ec2-web-sg"
+#   name_prefix = "ec2-web-sg-"
+#   description = "Allow incoming SSH, HTTP, and HTTPS traffic"
+#   vpc_id      = data.aws_vpc.default.id
+
+#   ingress {
+#     description = "SSH from anywhere"
+#     from_port   = 22
+#     to_port     = 22
+#     protocol    = "tcp"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   ingress {
+#     description = "HTTP from anywhere"
+#     from_port   = 80
+#     to_port     = 80
+#     protocol    = "tcp"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   ingress {
+#     description = "HTTPS from anywhere"
+#     from_port   = 443
+#     to_port     = 443
+#     protocol    = "tcp"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   egress {
+#     description = "Allow all outbound traffic"
+#     from_port   = 0
+#     to_port     = 0
+#     protocol    = "-1"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   tags = {
+#     Name        = "${var.environment}-${var.project_name}-ec2-security-group"
+#     Environment = var.environment
+#   }
+# }
 
 # ==============================================================================
 # 3. ACCESS KEY & EC2 COMPUTATION
 # ==============================================================================
 
-# # Local public key path mapping
-# resource "aws_key_pair" "deployer" {
-#   key_name   = "deployer-key"
-#   public_key = file("~/.ssh/id_rsa.pub")
+# NOTE: shifted to using ami id hardcoded as a var - don't need this anymore
+# # Fetch latest Amazon Linux 2023 AMI
+# data "aws_ami" "amazon_linux" {
+#   most_recent = true
+#   owners      = ["amazon"]
+
+#   filter {
+#     name   = "name"
+#     values = ["al2023-ami-*-x86_64"]
+#   }
 # }
-
-# Fetch latest Amazon Linux 2023 AMI
-data "aws_ami" "amazon_linux" {
-  most_recent = true
-  owners      = ["amazon"]
-
-  filter {
-    name   = "name"
-    values = ["al2023-ami-*-x86_64"]
-  }
-}
 
 # Launch the compute instance
 resource "aws_instance" "web_server" {
   #ami           = data.aws_ami.amazon_linux.id
   ami           = var.ami_id
   instance_type = var.ec2_instance_type
-  #key_name               = aws_key_pair.deployer.key_name
-  key_name               = data.aws_key_pair.ec2_key.key_name
-  vpc_security_group_ids = [aws_security_group.ec2_sg.id]
-  subnet_id              = data.aws_subnets.default.ids[0]
+  # no longer need this if using ec2 instance connect to ssh - provides temp ssh keys instead
+  # key_name               = data.aws_key_pair.ec2_key.key_name
+  # TODO: apparently need to explicitly set key_name to empty string to delete it from the instance
+  # however that will force destroy/recreate of the instance - let's first test other updates, then work on deleting key pair from instance
+  # comment out line below when ready to implement
+  # key_name = ""
+  vpc_security_group_ids = [
+    aws_security_group.ec2_sg_ssh_and_egress.id,
+    aws_security_group.ec2_sg_http_ipv4.id,
+    aws_security_group.ec2_sg_http_ipv6.id,
+    aws_security_group.ec2_sg_https_ipv4.id,
+    aws_security_group.ec2_sg_https_ipv6.id
+  ]
+  subnet_id = local.first_subnet_id
 
   # let's see if this is required - for now first deal with the issue that the new ec2 is a different ami id
   # root_block_device {
@@ -110,6 +341,7 @@ resource "aws_instance" "web_server" {
   tags = {
     Name        = "${var.environment}-${var.project_name}-ec2-instance"
     Environment = var.environment
+    AllowSSH    = "true"
   }
 
   lifecycle {

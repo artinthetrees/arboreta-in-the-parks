@@ -291,10 +291,11 @@ function ValueCountsTable({ data }) {
   );
 }
 
-function App() {
+const apiUrl = import.meta.env.VITE_API_URL;
+const appTitle = import.meta.env.VITE_APP_TITLE;
+const parkNamesEndpoint = apiUrl ? `${apiUrl}/park-names/` : null
 
-  const apiUrl = import.meta.env.VITE_API_URL;
-  const appTitle = import.meta.env.VITE_APP_TITLE;
+function App() {
 
   console.log(apiUrl);
   console.log(appTitle);
@@ -304,24 +305,20 @@ function App() {
   }
 
   const [parkNames, setParkNames] = useState([])
-  // const parkNamesEndpoint = `http://localhost:8000/park-names`
-  const parkNamesEndpoint = `${apiUrl}/park-names`
-
   const [parkName, setParkName] = useState(null)
-  const parkNameApiSafe = parkName ? parkName.replaceAll(" ", "+") : null
   const [treesInParkData, setTreesInParkData] = useState(null)
-  // const treesInParkEndpoint = parkName ? `http://localhost:8000/trees-in-park/?name=${parkNameApiSafe}` : null
-  const treesInParkEndpoint = parkName ? `${apiUrl}/trees-in-park/?name=${parkNameApiSafe}` : null
+
+  const parkNameApiSafe = parkName ? parkName.replaceAll(" ", "+") : null
+  const treesInParkEndpoint = parkNameApiSafe ? `${apiUrl}/trees-in-park/?name=${parkNameApiSafe}` : null
 
   const mapInitialCenter = [41.88, -87.62]
   const mapInitialZoom = 10
-
   const crownConditionValues = ["Good", "Fair", "Poor", "Dead"]
 
   // set up a useEffect hook to run a fetch of park names list any time the site reloads
   useEffect(() => {
-    // Guard clause: Stop immediately if the URL is invalid, null, or contains "null"
-    if (!parkNamesEndpoint || parkNamesEndpoint.includes('null') || parkNamesEndpoint.includes('undefined')) {
+    // Guard clause: Stop immediately if the URL is null
+    if (!parkNamesEndpoint) {
       console.warn('Skipping fetch: parkNamesEndpoint is not ready or is invalid:', parkNamesEndpoint);
       return;
     }
