@@ -1,25 +1,83 @@
 # ==============================================================================
-# NETWORKING & SECURITY GROUPS
+# CUSTOM NON-DEFAULT NETWORKING INFRASTRUCTURE
 # ==============================================================================
 
-## VPC and Subnets ##
+# # Fetch the default VPC to launch infrastructure
+# data "aws_vpc" "default" {
+#   default = true
+# }
 
-# Fetch the default VPC to launch infrastructure
-data "aws_vpc" "default" {
-  default = true
-}
+# # Fetch default subnets for the instance placement
+# data "aws_subnets" "default" {
+#   filter {
+#     name   = "vpc-id"
+#     values = [data.aws_vpc.default.id]
+#   }
+# }
 
-# Fetch default subnets for the instance placement
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
+# locals {
+#   first_subnet_id = data.aws_subnets.default.ids[0]
+# }
+
+# Create the Custom Isolated VPC
+resource "aws_vpc" "custom_vpc" {
+  cidr_block           = "10.100.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-custom-vpc"
+    Environment = var.environment
   }
 }
 
-locals {
-  first_subnet_id = data.aws_subnets.default.ids[0]
+# Create an Internet Gateway (Required to make the subnet public for your Elastic IP)
+resource "aws_internet_gateway" "custom_igw" {
+  vpc_id = aws_vpc.custom_vpc.id
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-custom-igw"
+    Environment = var.environment
+  }
 }
+
+# Create a Custom Public Subnet for EC2 Placement
+resource "aws_subnet" "custom_public_subnet" {
+  vpc_id                  = aws_vpc.custom_vpc.id
+  cidr_block              = "10.100.1.0/24"
+  availability_zone       = "${var.region}a"
+  map_public_ip_on_launch = true # Automatically requests public setup behavior
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-public-subnet-1a"
+    Environment = var.environment
+  }
+}
+
+# Create a Public Route Table pointing to the Internet Gateway
+resource "aws_route_table" "custom_public_rt" {
+  vpc_id = aws_vpc.custom_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.custom_igw.id
+  }
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-public-rt"
+    Environment = var.environment
+  }
+}
+
+# Bind the Route Table to your Custom Subnet
+resource "aws_route_table_association" "custom_public_assoc" {
+  subnet_id      = aws_subnet.custom_public_subnet.id
+  route_table_id = aws_route_table.custom_public_rt.id
+}
+
+# ==============================================================================
+# EC2 INSTANCE CONNECT ENDPOINT SETUP (CUSTOM VPC)
+# ==============================================================================
 
 ## EC2 Instance Connect Endpoint ##
 ## EC2 Instance Connect Endpoint Security Group ##
@@ -48,7 +106,7 @@ resource "aws_vpc_security_group_egress_rule" "eice_to_vpc_ssh" {
 
 # Deploy the EICE Endpoint proxy into your chosen subnet
 resource "aws_ec2_instance_connect_endpoint" "eice_for_default_vpc" {
-  subnet_id          = local.first_subnet_id
+  subnet_id          = aws_subnet.custom_public_subnet.id
   security_group_ids = [aws_security_group.eice_sg.id]
 
   tags = {
@@ -329,7 +387,7 @@ resource "aws_instance" "web_server" {
     aws_security_group.ec2_sg_https_ipv4.id,
     aws_security_group.ec2_sg_https_ipv6.id
   ]
-  subnet_id = local.first_subnet_id
+  subnet_id = aws_subnet.custom_public_subnet.id
 
   # let's see if this is required - for now first deal with the issue that the new ec2 is a different ami id
   # root_block_device {
