@@ -26,7 +26,7 @@ locals {
 
 # Create a security group dedicated strictly to the EICE proxy
 resource "aws_security_group" "eice_sg" {
-  name        = "eice-security-group"
+  name_prefix = "eice-security-group-"
   description = "Controls access for EC2 Instance Connect Endpoint"
   vpc_id      = data.aws_vpc.default.id
 
