@@ -372,17 +372,23 @@ resource "aws_instance" "web_server" {
   #ami           = data.aws_ami.amazon_linux.id
   ami           = var.ami_id
   instance_type = var.ec2_instance_type
-  # no longer need this if using ec2 instance connect to ssh - provides temp ssh keys instead
-  # key_name               = data.aws_key_pair.ec2_key.key_name
-  # TODO: apparently need to explicitly set key_name to empty string to delete it from the instance
-  # however that will force destroy/recreate of the instance - let's first test other updates, then work on deleting key pair from instance
-  # comment out line below when ready to implement
-  # key_name = ""
+  # TODO: should no longer need this if using ec2 instance connect to ssh - as it provides temp ssh keys instead - 
+  # ```aws ec2-instance-connect ssh --instance-id i-0123456789abcdef0 --connection-type eice --private-key-file "path_to_private_key"```
+  # however it seems like there are several issues with this:
+  # - normal function is to not set the private key file param as above, as this fx should generate an ephemeral key which it pushes to ec2
+  # - however, apparently a known issue on windows that it stores the ephemeral generated key in a temp folder with permissive permissions and the fx requires strict permissions so rejects these keys
+  # - solution is to generate your own key locally, set strict permissions, and set the private key file param with the path to this key
+  # - in this case (i think) what is supposed to happen is that the fx sends the public key corresponding to the private key specified ephemerally to the ec2 and then authenticates with the matching private key specified
+  # - this seemed to be working but it turns out that it was not - it was only working because i had originally set the key_name param of the ec2 instance to the key pair i have locally and also added as an ec2 key pair on aws console
+  # - this means that the fx is not ephemerally pushing the key pair to the ec2; instead, it's already there at creation of ec2 from def of key_name and stays there all the time
+  # - this still provides i think substantially more security than having fully open ssh but should troubleshoot this issue of not being able to ephemerally push ssh key pair from local to ec2
+  key_name = var.ec2_key_name
 
-  # Injecting the startup automation block
-  #user_data = file("${path.module}/setup-volume.sh")
-  # Enforce cleartext boundary mapping via native base64 pipeline
-  user_data_base64 = filebase64("${path.module}/setup-volume.sh")
+  # # Injecting the startup automation block
+  # #user_data = file("${path.module}/setup-volume.sh")
+  # # Enforce cleartext boundary mapping via native base64 pipeline
+  # user_data_base64 = filebase64("${path.module}/setup-volume.sh")
+  # user_data_replace_on_change = true
 
   vpc_security_group_ids = [
     aws_security_group.ec2_sg_ssh_and_egress.id,
@@ -411,24 +417,24 @@ resource "aws_instance" "web_server" {
   }
 }
 
-# Separate EBS Volume for Postgres Data
-resource "aws_ebs_volume" "postgres_data" {
-  availability_zone = aws_instance.web_server.availability_zone
-  size              = 10
-  type              = "gp3"
+# # Separate EBS Volume for Postgres Data
+# resource "aws_ebs_volume" "postgres_data" {
+#   availability_zone = aws_instance.web_server.availability_zone
+#   size              = 10
+#   type              = "gp3"
 
-  tags = {
-    Name        = "${var.environment}-${var.project_name}-postgres-db-volume"
-    Environment = var.environment
-  }
-}
+#   tags = {
+#     Name        = "${var.environment}-${var.project_name}-postgres-db-volume"
+#     Environment = var.environment
+#   }
+# }
 
-# Attach EBS Volume to the Instance
-resource "aws_volume_attachment" "ebs_att" {
-  device_name = "/dev/xvdf"
-  volume_id   = aws_ebs_volume.postgres_data.id
-  instance_id = aws_instance.web_server.id
-}
+# # Attach EBS Volume to the Instance
+# resource "aws_volume_attachment" "ebs_att" {
+#   device_name = "/dev/xvdf"
+#   volume_id   = aws_ebs_volume.postgres_data.id
+#   instance_id = aws_instance.web_server.id
+# }
 
 
 # Bind a static public EIP context to the instance
