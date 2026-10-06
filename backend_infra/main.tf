@@ -21,7 +21,8 @@
 
 # Create the Custom Isolated VPC
 resource "aws_vpc" "custom_vpc" {
-  cidr_block           = "10.100.0.0/16"
+  #cidr_block           = "10.100.0.0/16"
+  cidr_block           = var.vpc_cidr_block
   enable_dns_hostnames = true
   enable_dns_support   = true
 
@@ -43,8 +44,10 @@ resource "aws_internet_gateway" "custom_igw" {
 
 # Create a Custom Public Subnet for EC2 Placement
 resource "aws_subnet" "custom_public_subnet" {
-  vpc_id                  = aws_vpc.custom_vpc.id
-  cidr_block              = "10.100.1.0/24"
+  vpc_id = aws_vpc.custom_vpc.id
+  #cidr_block              = "10.100.1.0/24"
+  # Math: Carves out the very first /24 block (10.0.0.0/24) from the /16 VPC
+  cidr_block              = cidrsubnet(aws_vpc.custom_vpc.cidr_block, 8, 0)
   availability_zone       = "${var.region}a"
   map_public_ip_on_launch = true # Automatically requests public setup behavior
 
@@ -86,7 +89,8 @@ resource "aws_route_table_association" "custom_public_assoc" {
 resource "aws_security_group" "eice_sg" {
   name_prefix = "eice-security-group-"
   description = "Controls access for EC2 Instance Connect Endpoint"
-  vpc_id      = data.aws_vpc.default.id
+  #vpc_id      = data.aws_vpc.default.id
+  vpc_id = aws_vpc.custom_vpc.id
 
   tags = {
     Name        = "${var.environment}-${var.project_name}-eice-sg"
@@ -98,19 +102,20 @@ resource "aws_vpc_security_group_egress_rule" "eice_to_vpc_ssh" {
   security_group_id = aws_security_group.eice_sg.id
 
   # Allows the endpoint to send SSH traffic out to instances inside the VPC CIDR
-  cidr_ipv4   = data.aws_vpc.default.cidr_block
+  #cidr_ipv4   = data.aws_vpc.default.cidr_block
+  cidr_ipv4   = aws_vpc.custom_vpc.cidr_block
   from_port   = 22
   to_port     = 22
   ip_protocol = "tcp"
 }
 
 # Deploy the EICE Endpoint proxy into your chosen subnet
-resource "aws_ec2_instance_connect_endpoint" "eice_for_default_vpc" {
+resource "aws_ec2_instance_connect_endpoint" "eice_for_custom_vpc" {
   subnet_id          = aws_subnet.custom_public_subnet.id
   security_group_ids = [aws_security_group.eice_sg.id]
 
   tags = {
-    Name        = "${var.environment}-${var.project_name}-eice-for-default-vpc"
+    Name        = "${var.environment}-${var.project_name}-eice-for-custom-vpc"
     Environment = var.environment
   }
 }
@@ -144,7 +149,8 @@ data "aws_ec2_managed_prefix_list" "instance_connect" {
 resource "aws_security_group" "ec2_sg_ssh_and_egress" {
   name_prefix = "ec2-sg-ssh-and-egress-"
   description = "Allow incoming SSH traffic restricted to ec2 instance connect prefixes; Allow all outgoing traffic"
-  vpc_id      = data.aws_vpc.default.id
+  #vpc_id      = data.aws_vpc.default.id
+  vpc_id = aws_vpc.custom_vpc.id
 
   tags = {
     Name        = "${var.environment}-${var.project_name}-ec2-sg-ssh-and-egress"
@@ -156,7 +162,8 @@ resource "aws_security_group" "ec2_sg_ssh_and_egress" {
 resource "aws_security_group" "ec2_sg_http_ipv4" {
   name_prefix = "ec2-sg-http-ipv4-"
   description = "Allow incoming HTTP ipv4 traffic restricted to cloudfront prefixes"
-  vpc_id      = data.aws_vpc.default.id
+  #vpc_id      = data.aws_vpc.default.id
+  vpc_id = aws_vpc.custom_vpc.id
 
   tags = {
     Name        = "${var.environment}-${var.project_name}-ec2-sg-http-ipv4"
@@ -168,7 +175,8 @@ resource "aws_security_group" "ec2_sg_http_ipv4" {
 resource "aws_security_group" "ec2_sg_http_ipv6" {
   name_prefix = "ec2-sg-http-ipv6-"
   description = "Allow incoming HTTP ipv6 traffic restricted to cloudfront prefixes"
-  vpc_id      = data.aws_vpc.default.id
+  #vpc_id      = data.aws_vpc.default.id
+  vpc_id = aws_vpc.custom_vpc.id
 
   tags = {
     Name        = "${var.environment}-${var.project_name}-ec2-sg-http-ipv6"
@@ -180,7 +188,8 @@ resource "aws_security_group" "ec2_sg_http_ipv6" {
 resource "aws_security_group" "ec2_sg_https_ipv4" {
   name_prefix = "ec2-sg-https-ipv4-"
   description = "Allow incoming HTTPS ipv4 traffic restricted to cloudfront prefixes"
-  vpc_id      = data.aws_vpc.default.id
+  #vpc_id      = data.aws_vpc.default.id
+  vpc_id = aws_vpc.custom_vpc.id
 
   tags = {
     Name        = "${var.environment}-${var.project_name}-ec2-sg-https-ipv4"
@@ -192,7 +201,8 @@ resource "aws_security_group" "ec2_sg_https_ipv4" {
 resource "aws_security_group" "ec2_sg_https_ipv6" {
   name_prefix = "ec2-sg-https-ipv6-"
   description = "Allow incoming HTTPS ipv6 traffic restricted to cloudfront prefixes"
-  vpc_id      = data.aws_vpc.default.id
+  #vpc_id      = data.aws_vpc.default.id
+  vpc_id = aws_vpc.custom_vpc.id
 
   tags = {
     Name        = "${var.environment}-${var.project_name}-ec2-sg-https-ipv6"
@@ -357,18 +367,6 @@ resource "aws_vpc_security_group_egress_rule" "all_outbound" {
 # 3. ACCESS KEY & EC2 COMPUTATION
 # ==============================================================================
 
-# NOTE: shifted to using ami id hardcoded as a var - don't need this anymore
-# # Fetch latest Amazon Linux 2023 AMI
-# data "aws_ami" "amazon_linux" {
-#   most_recent = true
-#   owners      = ["amazon"]
-
-#   filter {
-#     name   = "name"
-#     values = ["al2023-ami-*-x86_64"]
-#   }
-# }
-
 # Launch the compute instance
 resource "aws_instance" "web_server" {
   #ami           = data.aws_ami.amazon_linux.id
@@ -380,6 +378,12 @@ resource "aws_instance" "web_server" {
   # however that will force destroy/recreate of the instance - let's first test other updates, then work on deleting key pair from instance
   # comment out line below when ready to implement
   # key_name = ""
+
+  # Injecting the startup automation block
+  #user_data = file("${path.module}/setup-volume.sh")
+  # Enforce cleartext boundary mapping via native base64 pipeline
+  user_data_base64 = filebase64("${path.module}/setup-volume.sh")
+
   vpc_security_group_ids = [
     aws_security_group.ec2_sg_ssh_and_egress.id,
     aws_security_group.ec2_sg_http_ipv4.id,
@@ -406,6 +410,26 @@ resource "aws_instance" "web_server" {
     create_before_destroy = true
   }
 }
+
+# Separate EBS Volume for Postgres Data
+resource "aws_ebs_volume" "postgres_data" {
+  availability_zone = aws_instance.web_server.availability_zone
+  size              = 10
+  type              = "gp3"
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-postgres-db-volume"
+    Environment = var.environment
+  }
+}
+
+# Attach EBS Volume to the Instance
+resource "aws_volume_attachment" "ebs_att" {
+  device_name = "/dev/xvdf"
+  volume_id   = aws_ebs_volume.postgres_data.id
+  instance_id = aws_instance.web_server.id
+}
+
 
 # Bind a static public EIP context to the instance
 # UPDATE: instead of hardcoding the association within the eip definition, add an explicit association resource 
@@ -606,6 +630,11 @@ resource "aws_route53_record" "subdomain_alias" {
 # ==============================================================================
 # OUTPUTS
 # ==============================================================================
+
+output "ec2_id" {
+  value       = aws_instance.web_server.id
+  description = "AWS EC2 instance ID - use to ssh in using ec2 instance connect endpoint instead of public IP"
+}
 
 output "ec2_public_ip" {
   value       = aws_eip.web_eip.public_ip
