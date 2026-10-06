@@ -382,6 +382,8 @@ resource "aws_instance" "web_server" {
   # - this seemed to be working but it turns out that it was not - it was only working because i had originally set the key_name param of the ec2 instance to the key pair i have locally and also added as an ec2 key pair on aws console
   # - this means that the fx is not ephemerally pushing the key pair to the ec2; instead, it's already there at creation of ec2 from def of key_name and stays there all the time
   # - this still provides i think substantially more security than having fully open ssh but should troubleshoot this issue of not being able to ephemerally push ssh key pair from local to ec2
+  # NOTE: some additional research suggests that the issue with sending the key from local is that the ssh file structure is not set up on ec2 if no key_name is specified (e.g. the ssh folder with the authorized_keys file inside, and set with proper strict permissions)
+  # so seems like possibly a good approach would be instead of specifying a key_name to have a startup script for the ec2 (e.g. via user_data) that sets this infra up
   key_name = var.ec2_key_name
 
   # # Injecting the startup automation block
