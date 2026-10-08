@@ -23,7 +23,7 @@ services:
     volumes:
       # - postgres-data:/var/lib/postgresql/data
       # CHANGED: Replaced the named volume with the absolute path to your EBS volume mount point
-      - /mnt/postgres_data:/var/lib/postgresql/data
+      - /mnt/postgres_data/data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
