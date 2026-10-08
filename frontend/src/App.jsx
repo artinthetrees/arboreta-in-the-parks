@@ -5,7 +5,7 @@ import heroImg from './assets/hero.png';
 import sandyStream from './assets/sandystream.png'
 import './App.css';
 
-import { MapContainer, TileLayer, LayersControl, Marker, Popup, useMap, useMapEvents, GeoJSON, FeatureGroup, Polygon } from "react-leaflet"
+import { MapContainer, WMSTileLayer, TileLayer, LayersControl, Marker, Popup, useMap, useMapEvents, GeoJSON, FeatureGroup, Polygon } from "react-leaflet"
 import L from 'leaflet';
 
 import 'leaflet/dist/leaflet.css';
@@ -513,12 +513,12 @@ function App() {
           </p>
           <p className="fs-4">
             Check out a few parks that are currently going for arboretum status and have at least some trees inventoried:
-            <ul className="centered-list">
-              <li>Horner (Henry)</li>
-              <li>Independence</li>
-              <li>Wicker (Charles, Joel)</li>
-            </ul>
           </p>
+          <ul className="centered-list">
+            <li>Horner (Henry)</li>
+            <li>Independence</li>
+            <li>Wicker (Charles, Joel)</li>
+          </ul>
         </div>
         <ParkSelect filterVal={parkName} setFilterVal={setParkName} parkNames={parkNames} />
         {/* <p className="fs-4">
@@ -546,10 +546,12 @@ function App() {
           id="city-map"
           center={mapInitialCenter}
           zoom={mapInitialZoom}
+          maxZoom={23}
         >
           <LayersControl position="topright">
 
-            {/* Default Base Map */}
+
+            {/* Open Street Map */}
             <LayersControl.BaseLayer name="OpenStreetMap">
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -557,22 +559,35 @@ function App() {
               />
             </LayersControl.BaseLayer>
 
-            {/* Base Layer: Esri Satellite */}
-            <LayersControl.BaseLayer checked name="Satellite (Esri)">
+            {/* Esri Satellite */}
+            <LayersControl.BaseLayer name="Satellite (Esri)">
               <TileLayer
                 url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                maxZoom={23}       /* Matches the MapContainer maxZoom to allow deeper zooming */
+                maxNativeZoom={18}
                 attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
               />
             </LayersControl.BaseLayer>
 
+            {/* Google Satellite */}
+            <LayersControl.BaseLayer checked name="Satellite (Google)">
+              <TileLayer
+                url='https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
+                maxZoom={23}
+                maxNativeZoom={20}
+                subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+                attribution="&copy; Google Maps"
+              />
+            </LayersControl.BaseLayer>
+
             {/* Alternative Base Map */}
-            <LayersControl.BaseLayer name="CartoDB Light">
+            {/* <LayersControl.BaseLayer name="CartoDB Light">
               <TileLayer
                 attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 subdomains='abcd'
               />
-            </LayersControl.BaseLayer>
+            </LayersControl.BaseLayer> */}
 
             {/* <LayersControl.Overlay name="CA with counts">
               {currentYearData.length > 0 ? (
