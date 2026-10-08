@@ -5,7 +5,7 @@ import heroImg from './assets/hero.png';
 import sandyStream from './assets/sandystream.png'
 import './App.css';
 
-import { MapContainer, WMSTileLayer, TileLayer, LayersControl, Marker, Popup, useMap, useMapEvents, GeoJSON, FeatureGroup, Polygon } from "react-leaflet"
+import { MapContainer, WMSTileLayer, TileLayer, LayersControl, Marker, Popup, useMap, useMapEvents, GeoJSON, FeatureGroup, Polygon, LayerGroup } from "react-leaflet"
 import L from 'leaflet';
 
 import 'leaflet/dist/leaflet.css';
@@ -555,7 +555,10 @@ function App() {
             <LayersControl.BaseLayer name="OpenStreetMap">
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png"
+                // url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png"
+                url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                maxZoom={23}       /* Matches the MapContainer maxZoom to allow deeper zooming */
+                maxNativeZoom={18}
               />
             </LayersControl.BaseLayer>
 
@@ -571,13 +574,24 @@ function App() {
 
             {/* Google Satellite */}
             <LayersControl.BaseLayer checked name="Satellite (Google)">
-              <TileLayer
-                url='https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
-                maxZoom={23}
-                maxNativeZoom={20}
-                subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
-                attribution="&copy; Google Maps"
-              />
+              <LayerGroup>
+                {/* Base Satellite Imagery */}
+                <TileLayer
+                  url='https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
+                  maxZoom={23}
+                  maxNativeZoom={20}
+                  subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+                  attribution="&copy; Google Maps"
+                />
+                {/* Transparent Hybrid Overlay (Labels, Boundaries & Roads) */}
+                <TileLayer
+                  url="https://{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}"
+                  subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+                  maxZoom={23}
+                  maxNativeZoom={20}
+                />
+              </LayerGroup>
+
             </LayersControl.BaseLayer>
 
             {/* Alternative Base Map */}
