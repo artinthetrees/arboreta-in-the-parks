@@ -389,8 +389,8 @@ resource "aws_instance" "web_server" {
   # # Injecting the startup automation block
   # #user_data = file("${path.module}/setup-volume.sh")
   # # Enforce cleartext boundary mapping via native base64 pipeline
-  # user_data_base64 = filebase64("${path.module}/setup-volume.sh")
-  # user_data_replace_on_change = true
+  user_data_base64            = filebase64("${path.module}/setup-volume.sh")
+  user_data_replace_on_change = true
 
   vpc_security_group_ids = [
     aws_security_group.ec2_sg_ssh_and_egress.id,
@@ -419,24 +419,24 @@ resource "aws_instance" "web_server" {
   }
 }
 
-# # Separate EBS Volume for Postgres Data
-# resource "aws_ebs_volume" "postgres_data" {
-#   availability_zone = aws_instance.web_server.availability_zone
-#   size              = 10
-#   type              = "gp3"
+# Separate EBS Volume for Postgres Data
+resource "aws_ebs_volume" "postgres_data" {
+  availability_zone = aws_instance.web_server.availability_zone
+  size              = 10
+  type              = "gp3"
 
-#   tags = {
-#     Name        = "${var.environment}-${var.project_name}-postgres-db-volume"
-#     Environment = var.environment
-#   }
-# }
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-postgres-db-volume"
+    Environment = var.environment
+  }
+}
 
-# # Attach EBS Volume to the Instance
-# resource "aws_volume_attachment" "ebs_att" {
-#   device_name = "/dev/xvdf"
-#   volume_id   = aws_ebs_volume.postgres_data.id
-#   instance_id = aws_instance.web_server.id
-# }
+# Attach EBS Volume to the Instance
+resource "aws_volume_attachment" "ebs_att" {
+  device_name = "/dev/xvdf" # for later ami may have to calculate this dynamically
+  volume_id   = aws_ebs_volume.postgres_data.id
+  instance_id = aws_instance.web_server.id
+}
 
 
 # Bind a static public EIP context to the instance
