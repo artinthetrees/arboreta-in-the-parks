@@ -509,8 +509,11 @@ function App() {
             A web application to help Chicago Park District Park Stewards attain and maintain arboretum status at their park. It tracks progress towards identification of 25 unique tree types as necessary to apply for arboretum status and maintenance of these trees in good conditions, and provides a publicly available map of park trees by type.
           </p>
           <p className="fs-4">
-            Not all parks currently have trees inventoried. Check out a few that are currently going for arboretum status and have at least some trees inventoried:
-            <ul>
+            Not all parks currently have trees inventoried.
+          </p>
+          <p className="fs-4">
+            Check out a few parks that are currently going for arboretum status and have at least some trees inventoried:
+            <ul className="centered-list">
               <li>Horner (Henry)</li>
               <li>Independence</li>
               <li>Wicker (Charles, Joel)</li>
