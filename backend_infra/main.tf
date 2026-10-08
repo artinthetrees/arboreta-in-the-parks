@@ -429,6 +429,10 @@ resource "aws_ebs_volume" "postgres_data" {
     Name        = "${var.environment}-${var.project_name}-postgres-db-volume"
     Environment = var.environment
   }
+
+  lifecycle {
+    prevent_destroy = true # Blocks 'terraform destroy' from tearing down the volume
+  }
 }
 
 # Attach EBS Volume to the Instance
