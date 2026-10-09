@@ -6,3 +6,5 @@ vpc_cidr_block = "10.2.0.0/16" # dev is "10.0.0.0/16", staging is "10.1.0.0/16",
 
 ec2_key_name = "name_of_ec2_ssh_key_pair_already_imported_into_aws"
 ec2_instance_type = "instance_type_for_ec2_instance"
+
+cloudfront_secret_token = "my-super-secret-token"
