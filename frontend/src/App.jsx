@@ -190,32 +190,46 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
 // }
 
 
-function ParkSelect({ setFilterVal, parkNames }) {
-  // Set parkName using user selection from dropdown of list of all parkNames
-  const parkNamesList = parkNames.map(dict => dict.name);
+function ParkSelect({ setFilterVal, parkNames = [] }) {
+  const handleInputChange = (e) => {
+    const inputValue = e.target.value;
 
-  const options = parkNamesList.map((parkName) => {
-    return (
-      <option value={parkName} key={parkName}>
-        {parkName}
-      </option>
-    )
-  })
+    // Allow the user to clear the input field entirely
+    if (inputValue === "") {
+      setFilterVal("");
+      return;
+    }
+
+    // Check if the typed value matches a valid park name
+    const isValidPark = parkNames.some(dict => dict.name === inputValue);
+
+    // Only pass it up to the parent if it's a real match
+    if (isValidPark) {
+      setFilterVal(inputValue);
+    }
+  };
 
   return (
     <>
       <label htmlFor="parkSelect" className="fs-3">
         <b>Filter by park:</b>{" "}
       </label>
-      <select
+
+      <input
+        list="parkOptions"
         id="parkSelect"
-        className="form-select form-select-lg mb-3"
-        onChange={(e) => setFilterVal(e.target.value)}
-      >
-        {options}
-      </select>
+        className="form-control form-control-lg mb-3"
+        placeholder="Type to search parks..."
+        onChange={handleInputChange}
+      />
+
+      <datalist id="parkOptions">
+        {parkNames.map((dict) => (
+          <option value={dict.name} key={dict.name} />
+        ))}
+      </datalist>
     </>
-  )
+  );
 }
 
 // Internal component to handle map movement after data loads
