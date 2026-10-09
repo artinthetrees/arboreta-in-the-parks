@@ -205,7 +205,7 @@ function ParkSelect({ setFilterVal, parkNames }) {
   return (
     <>
       <label htmlFor="parkSelect" className="fs-3">
-        Filter by park:{" "}
+        <b>Filter by park:</b>{" "}
       </label>
       <select
         id="parkSelect"
@@ -512,7 +512,7 @@ function App() {
             Not all parks currently have trees inventoried.
           </p>
           <p className="fs-4">
-            Check out a few parks that are currently going for arboretum status and have at least some trees inventoried:
+            <b>Check out a few parks that are currently going for arboretum status and have at least some trees inventoried:</b>
           </p>
           <ul className="centered-list">
             <li>Horner (Henry)</li>
