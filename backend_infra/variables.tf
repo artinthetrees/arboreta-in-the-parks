@@ -5,6 +5,12 @@ variable "subdomain_name" { type = string }
 variable "ami_id" { type = string } # should update this ~ quarterly to get bug fixes, security patches, etc.
 variable "vpc_cidr_block" { type = string }
 
+variable "cloudfront_secret_token" {
+  type      = string
+  sensitive = true
+
+}
+
 variable "project_name" {
   default = "arboreta-in-the-parks-backend"
   type    = string
