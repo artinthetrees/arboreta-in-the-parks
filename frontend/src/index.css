@@ -104,6 +104,12 @@ p {
   /* 1rem is 1 root unit, equal to 16px usually */
 }
 
+/* Re-enable default bolding across your app */
+b,
+strong {
+  font-weight: bold;
+}
+
 code,
 .counter {
   font-family: var(--mono);
