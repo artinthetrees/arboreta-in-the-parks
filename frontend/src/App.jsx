@@ -258,24 +258,35 @@ function ZoomToGeoJSON({ geoJsonData }) {
   );
 }
 
-// 1. Create a child component inside MapContainer
-function ZoomTracker({ mapInitialZoom }) {
-  const [zoomLevel, setZoomLevel] = useState(mapInitialZoom); // initial zoom
-
+// Receives setConstZoom directly as a prop
+function ZoomTracker({ setConstZoom }) {
   const map = useMapEvents({
     zoomend: () => {
-      setZoomLevel(map.getZoom()); // Get current zoom level
-    },
+      const currentZoom = map.getZoom();
+      setZoomLevel(currentZoom);
+      setConstZoom(currentZoom); // Updates the const in the parent component
+    }
   });
+
+  // Track local display state initialized to the map's default zoom
+  const [zoomLevel, setZoomLevel] = useState(() => map.getZoom());
+
+  // Syncs the initial default map zoom to the parent const on load
+  useEffect(() => {
+    setConstZoom(map.getZoom());
+  }, [map, setConstZoom]);
 
   return (
     <div style={{
       position: 'absolute',
-      top: 10,
-      left: 50,
+      bottom: '20px',
+      left: '20px',
       zIndex: 1000,
       background: 'white',
-      padding: '5px'
+      padding: '8px 12px',
+      borderRadius: '4px',
+      boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
+      fontWeight: 'bold'
     }}>
       Current Zoom: {zoomLevel}
     </div>
@@ -317,6 +328,8 @@ function App() {
   if (import.meta.env.DEV) {
     console.log('Running in development mode');
   }
+
+  const [constZoom, setConstZoom] = useState(null);
 
   const [parkNames, setParkNames] = useState([])
   const [parkName, setParkName] = useState(null)
@@ -654,7 +667,7 @@ function App() {
               ) : null}
             </LayersControl.Overlay>
 
-            <ZoomTracker mapInitialZoom={mapInitialZoom} />
+            <ZoomTracker setConstZoom={setConstZoom} />
 
           </LayersControl>
         </MapContainer>
