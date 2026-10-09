@@ -232,22 +232,22 @@ function ParkSelect({ setFilterVal, parkNames = [] }) {
   );
 }
 
-// Internal component to handle map movement after data loads
+// 2. AUTO-ZOOM TO GEOJSON
 function ZoomToGeoJSON({ geoJsonData }) {
   const map = useMap();
   const geoJsonRef = useRef(null);
 
   useEffect(() => {
     if (geoJsonData && geoJsonRef.current) {
-      // Extract boundary coordinates from the processed GeoJSON layer
       const bounds = geoJsonRef.current.getBounds();
-
-      // Auto-zoom with a pixel padding buffer around the shapes
       if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [50, 50] });
+        // Added animate: false to make the view update instant
+        map.fitBounds(bounds, { padding: [50, 50], animate: false });
       }
     }
   }, [map, geoJsonData]);
+
+  if (!geoJsonData) return null;
 
   return (
     <GeoJSON
@@ -258,40 +258,77 @@ function ZoomToGeoJSON({ geoJsonData }) {
   );
 }
 
-// Receives setConstZoom directly as a prop
-function ZoomTracker({ setConstZoom }) {
-  const map = useMapEvents({
-    zoomend: () => {
-      const currentZoom = map.getZoom();
-      setZoomLevel(currentZoom);
-      setConstZoom(currentZoom); // Updates the const in the parent component
-    }
-  });
 
-  // Track local display state initialized to the map's default zoom
+function ZoomTracker({ setConstZoom }) {
+  const map = useMap();
   const [zoomLevel, setZoomLevel] = useState(() => map.getZoom());
 
-  // Syncs the initial default map zoom to the parent const on load
   useEffect(() => {
-    setConstZoom(map.getZoom());
+    if (!map) return;
+
+    // Force update when any zoom or movement ends (manual or programmatic)
+    const handleZoom = () => {
+      const currentZoom = map.getZoom();
+      setZoomLevel(currentZoom);
+      setConstZoom(currentZoom);
+    };
+
+    map.on('zoomend moveend', handleZoom);
+
+    // Sync initial zoom immediately on mount
+    handleZoom();
+
+    // Clean up event listeners on unmount
+    return () => {
+      map.off('zoomend moveend', handleZoom);
+    };
   }, [map, setConstZoom]);
 
   return (
     <div style={{
-      position: 'absolute',
-      bottom: '20px',
-      left: '20px',
-      zIndex: 1000,
-      background: 'white',
-      padding: '8px 12px',
-      borderRadius: '4px',
-      boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
-      fontWeight: 'bold'
+      position: 'absolute', bottom: '20px', left: '20px', zIndex: 1000,
+      background: 'white', padding: '8px 12px', borderRadius: '4px',
+      boxShadow: '0 2px 5px rgba(0,0,0,0.3)', fontWeight: 'bold'
     }}>
       Current Zoom: {zoomLevel}
     </div>
   );
 }
+
+// // Receives setConstZoom directly as a prop
+// function ZoomTracker({ setConstZoom }) {
+//   const map = useMapEvents({
+//     zoomend: () => {
+//       const currentZoom = map.getZoom();
+//       setZoomLevel(currentZoom);
+//       setConstZoom(currentZoom); // Updates the const in the parent component
+//     }
+//   });
+
+//   // Track local display state initialized to the map's default zoom
+//   const [zoomLevel, setZoomLevel] = useState(() => map.getZoom());
+
+//   // Syncs the initial default map zoom to the parent const on load
+//   useEffect(() => {
+//     setConstZoom(map.getZoom());
+//   }, [map, setConstZoom]);
+
+//   return (
+//     <div style={{
+//       position: 'absolute',
+//       bottom: '20px',
+//       left: '20px',
+//       zIndex: 1000,
+//       background: 'white',
+//       padding: '8px 12px',
+//       borderRadius: '4px',
+//       boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
+//       fontWeight: 'bold'
+//     }}>
+//       Current Zoom: {zoomLevel}
+//     </div>
+//   );
+// }
 
 function ValueCountsTable({ data }) {
   const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
@@ -332,8 +369,10 @@ function App() {
   const [constZoom, setConstZoom] = useState(null);
 
   const [parkNames, setParkNames] = useState([])
+
   const [parkName, setParkName] = useState(null)
   const [treesInParkData, setTreesInParkData] = useState(null)
+  const [treesInParkDataloading, setTreesInParkDataLoading] = useState(true);
 
   const parkNameApiSafe = parkName ? parkName.replaceAll(" ", "+") : null
   const treesInParkEndpoint = parkNameApiSafe ? `${apiUrl}/trees-in-park/?name=${parkNameApiSafe}` : null
@@ -372,8 +411,12 @@ function App() {
       .then((data) => {
         // console.log('Data:', data);
         setTreesInParkData(data);
+        setTreesInParkDataLoading(false)
       })
-      .catch(error => console.error('Error:', error)); // Log errors
+      .catch((err) => {
+        console.error('Error:', err);
+        setTreesInParkDataLoading(false);
+      });
   }, [treesInParkEndpoint])
 
   // parkName set by user selection from dropdown  
