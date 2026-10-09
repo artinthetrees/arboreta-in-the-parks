@@ -561,6 +561,12 @@ resource "aws_cloudfront_distribution" "cdn" {
       name  = "X-Forwarded-Host"
       value = var.subdomain_name # e.g., backend-dev.rooteddata.org
     }
+
+    # ADD THIS: A secret header used to identify genuine CloudFront requests
+    custom_header {
+      name  = "X-Origin-Verify"
+      value = var.cloudfront_secret_token # Store this in an env var or secrets manager
+    }
   }
 
   enabled         = true
