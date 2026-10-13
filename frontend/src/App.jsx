@@ -27,7 +27,7 @@ L.Icon.Default.mergeOptions({
 
 //
 
-export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, conditionValues = false, onCellClick }) {
+export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, conditionValues = false, onCellClick, activeFilter }) {
   if (!features || features.length === 0) return <p>No data available</p>;
 
   // Count items by looking inside the properties object
@@ -119,7 +119,7 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
 
           {/* Total Column Header Click */}
           <th
-            style={{ cursor: 'pointer' }}
+            // style={{ cursor: 'pointer' }}
             onClick={() => handleClick('total_header', { label: 'Row Totals' })}
           >
             Total
@@ -160,7 +160,7 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
 
               {/* Row Total Cell Click */}
               <td
-                style={{ cursor: 'pointer' }}
+                // style={{ cursor: 'pointer' }}
                 onClick={() => handleClick('row_total_cell', { species, total: rowTotal })}
               >
                 <strong>{rowTotal}</strong>
@@ -176,7 +176,7 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
         <tr>
           {/* Bottom Left Total Label Click */}
           <td
-            style={{ cursor: 'pointer' }}
+            // style={{ cursor: 'pointer' }}
             onClick={() => handleClick('footer_label', { label: 'Total' })}
           >
             <strong>Total</strong>
@@ -186,7 +186,7 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
           {conditionsList.map((cond) => (
             <td
               key={cond}
-              style={{ cursor: 'pointer' }}
+              // style={{ cursor: 'pointer' }}
               onClick={() => handleClick('column_total_cell', { condition: cond, total: columnTotals[cond] })}
             >
               <strong>{columnTotals[cond]}</strong>
@@ -195,7 +195,7 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
 
           {/* Grand Total Cell Click */}
           <td
-            style={{ cursor: 'pointer' }}
+            // style={{ cursor: 'pointer' }}
             onClick={() => handleClick('grand_total_cell', { total: grandTotal })}
           >
             <strong>{grandTotal}</strong>
@@ -630,6 +630,7 @@ function App() {
             conditionKey={conditionKey}
             conditionValues={crownConditionValues}
             onCellClick={handleTableClick}
+            activeFilter={activeFilter}
           />
         )}
         {/* Control / Breadcrumb Bar */}
