@@ -230,29 +230,6 @@ function ZoomTracker({ setConstZoom }) {
   );
 }
 
-function ValueCountsTable({ data }) {
-  const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
-
-  return (
-    <table>
-      <thead>
-        <tr>
-          <th>Item</th>
-          <th>Count</th>
-        </tr>
-      </thead>
-      <tbody>
-        {entries.map(([key, value]) => (
-          <tr key={key}>
-            <td>{key}</td>
-            <td>{value}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
 const apiUrl = import.meta.env.VITE_API_URL;
 const appTitle = import.meta.env.VITE_APP_TITLE;
 const parkNamesEndpoint = apiUrl ? `${apiUrl}/park-names/` : null
@@ -499,11 +476,6 @@ function App() {
             <b>Number of unique tree types identified in this park:</b> {treeTypeUniqueCount}
           </p>
         )}
-        {/* {treesInParkData && treeTypeUniqueCount !== 0 && (
-          <ValueCountsTable
-            data={treeTypeValueCounts}
-          />
-        )} */}
         {treesInParkData && treeTypeUniqueCount !== 0 && (
           <GeoJsonSummaryTable
             features={treesInParkList}
