@@ -27,7 +27,7 @@ L.Icon.Default.mergeOptions({
 
 //
 
-export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, conditionValues = false }) {
+export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, conditionValues = false, onCellClick }) {
   if (!features || features.length === 0) return <p>No data available</p>;
 
   // Count items by looking inside the properties object
@@ -86,15 +86,49 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
   }, {});
   //
 
+  // Helper function to safely execute callback if provided
+  const handleClick = (type, details) => {
+    if (typeof onCellClick === 'function') {
+      onCellClick({ type, ...details });
+    }
+  };
+
   return (
     <table>
       <thead>
         <tr>
-          <th style={{ textTransform: 'capitalize' }}>{speciesKey}</th>
+          {/* Main Entity Header Click */}
+          <th
+            // style={{ textTransform: 'capitalize', cursor: 'pointer' }}
+            style={{ textTransform: 'capitalize' }}
+            onClick={() => handleClick('main_header', { label: speciesKey })}
+          >
+            {speciesKey}
+          </th>
+
+          {/* Dynamic Column Header Click */}
+          {conditionsList.map((cond) => (
+            <th
+              key={cond}
+              style={{ cursor: 'pointer' }}
+              onClick={() => handleClick('column_header', { condition: cond })}
+            >
+              {cond}
+            </th>
+          ))}
+
+          {/* Total Column Header Click */}
+          <th
+            style={{ cursor: 'pointer' }}
+            onClick={() => handleClick('total_header', { label: 'Row Totals' })}
+          >
+            Total
+          </th>
+          {/* <th style={{ textTransform: 'capitalize' }}>{speciesKey}</th>
           {conditionsList.map((cond) => (
             <th key={cond}>{cond}</th>
           ))}
-          <th>Total</th>
+          <th>Total</th> */}
         </tr>
       </thead>
       <tbody>
@@ -105,20 +139,72 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
 
           return (
             <tr key={species}>
-              <td>{species}</td>
+              {/* Row Label Click */}
+              <td
+                style={{ cursor: 'pointer', fontWeight: species === 'Unknown' ? 'italic' : 'normal' }}
+                onClick={() => handleClick('row_label', { species })}
+              >
+                {species}
+              </td>
+
+              {/* Standard Data Cell Click */}
+              {conditionsList.map((cond) => (
+                <td
+                  key={cond}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => handleClick('data_cell', { species, condition: cond, value: counts[species][cond] || 0 })}
+                >
+                  {counts[species][cond] || 0}
+                </td>
+              ))}
+
+              {/* Row Total Cell Click */}
+              <td
+                style={{ cursor: 'pointer' }}
+                onClick={() => handleClick('row_total_cell', { species, total: rowTotal })}
+              >
+                <strong>{rowTotal}</strong>
+              </td>
+              {/* <td>{species}</td>
               {conditionsList.map((cond) => (
                 <td key={cond}>{counts[species][cond] || 0}</td>
               ))}
-              <td><strong>{rowTotal}</strong></td>
+              <td><strong>{rowTotal}</strong></td> */}
             </tr>
           );
         })}
         <tr>
-          <td><strong>Total</strong></td>
+          {/* Bottom Left Total Label Click */}
+          <td
+            style={{ cursor: 'pointer' }}
+            onClick={() => handleClick('footer_label', { label: 'Total' })}
+          >
+            <strong>Total</strong>
+          </td>
+
+          {/* Column Total Cell Click */}
+          {conditionsList.map((cond) => (
+            <td
+              key={cond}
+              style={{ cursor: 'pointer' }}
+              onClick={() => handleClick('column_total_cell', { condition: cond, total: columnTotals[cond] })}
+            >
+              <strong>{columnTotals[cond]}</strong>
+            </td>
+          ))}
+
+          {/* Grand Total Cell Click */}
+          <td
+            style={{ cursor: 'pointer' }}
+            onClick={() => handleClick('grand_total_cell', { total: grandTotal })}
+          >
+            <strong>{grandTotal}</strong>
+          </td>
+          {/* <td><strong>Total</strong></td>
           {conditionsList.map((cond) => (
             <td key={cond}><strong>{columnTotals[cond]}</strong></td>
           ))}
-          <td><strong>{grandTotal}</strong></td>
+          <td><strong>{grandTotal}</strong></td> */}
         </tr>
       </tbody>
     </table>
