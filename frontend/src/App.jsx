@@ -36,39 +36,78 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
     const species = properties[speciesKey];
     const condition = properties[conditionKey];
 
-    if (species && condition) {
-      acc[species] = acc[species] || {};
-      acc[species][condition] = (acc[species][condition] || 0) + 1;
-    }
+    //
+    const intSpecies = species || "Unknown";
+    const finalSpecies = intSpecies.startsWith("Unknown")
+      ? "Unknown"
+      : intSpecies;
+    const finalCondition = condition || "Unknown";
+
+    acc[finalSpecies] = acc[finalSpecies] || {};
+    acc[finalSpecies][finalCondition] = (acc[finalSpecies][finalCondition] || 0) + 1;
+    //
+
+    // if (species && condition) {
+    //   acc[species] = acc[species] || {};
+    //   acc[species][condition] = (acc[species][condition] || 0) + 1;
+    // }
     return acc;
   }, {});
 
   console.log("counts: ", counts)
 
   // 2. Extract unique conditions dynamically for columns
+  // const conditionsList = conditionValues ? conditionValues : Array.from(
+  //   new Set(
+  //     features
+  //       .map((feature) => feature.properties?.[conditionKey])
+  //       .filter(Boolean)
+  //   )
+  // );
+
+  //
   const conditionsList = conditionValues ? conditionValues : Array.from(
     new Set(
-      features
-        .map((feature) => feature.properties?.[conditionKey])
-        .filter(Boolean)
+      features.map((feature) => feature.properties?.[conditionKey] || "Unknown")
     )
   );
+
+  console.log("conditionsList: ", conditionsList)
+  //
 
   // 3. Pre-calculate row totals and sort species descending
   const speciesList = Object.keys(counts).sort((a, b) => {
     const totalA = conditionsList.reduce((sum, cond) => sum + (counts[a][cond] || 0), 0);
     const totalB = conditionsList.reduce((sum, cond) => sum + (counts[b][cond] || 0), 0);
-    return totalB - totalA; // High to low
+
+    //
+    if (a === "Unknown") return 1;  // Push "Unknown" row to bottom
+    if (b === "Unknown") return -1; // Push "Unknown" row to bottom
+    return totalB - totalA;         // Otherwise, sort high to low
+    //
+
+    // return totalB - totalA; // High to low
   });
 
-  const grandTotal = features.length;
+  console.log("speciesList: ", speciesList)
 
+  //
+  let grandTotal = 0;
   const columnTotals = conditionsList.reduce((acc, cond) => {
-    acc[cond] = features.filter(
-      (feature) => feature.properties?.[conditionKey] === cond
-    ).length;
+    const totalForCond = speciesList.reduce((sum, species) => sum + (counts[species][cond] || 0), 0);
+    acc[cond] = totalForCond;
+    grandTotal += totalForCond;
     return acc;
   }, {});
+  //
+
+  // const grandTotal = features.length;
+  // const columnTotals = conditionsList.reduce((acc, cond) => {
+  //   acc[cond] = features.filter(
+  //     (feature) => feature.properties?.[conditionKey] === cond
+  //   ).length;
+  //   return acc;
+  // }, {});
 
   return (
     <table>
@@ -379,7 +418,7 @@ function App() {
 
   const mapInitialCenter = [41.88, -87.62]
   const mapInitialZoom = 10
-  const crownConditionValues = ["Good", "Fair", "Poor", "Dead"]
+  const crownConditionValues = ["Good", "Fair", "Poor", "Dead", "Unknown"]
 
   // set up a useEffect hook to run a fetch of park names list any time the site reloads
   useEffect(() => {
