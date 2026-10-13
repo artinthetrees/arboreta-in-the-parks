@@ -39,9 +39,9 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
     //
     const intSpecies = species || "Unknown";
     const finalSpecies = intSpecies.startsWith("Unknown")
-      ? "Unknown"
+      ? "N/A"
       : intSpecies;
-    const finalCondition = condition || "Unknown";
+    const finalCondition = condition || "N/A";
 
     acc[finalSpecies] = acc[finalSpecies] || {};
     acc[finalSpecies][finalCondition] = (acc[finalSpecies][finalCondition] || 0) + 1;
@@ -55,7 +55,7 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
   //
   const conditionsList = conditionValues ? conditionValues : Array.from(
     new Set(
-      features.map((feature) => feature.properties?.[conditionKey] || "Unknown")
+      features.map((feature) => feature.properties?.[conditionKey] || "N/A")
     )
   );
 
@@ -68,8 +68,8 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
     const totalB = conditionsList.reduce((sum, cond) => sum + (counts[b][cond] || 0), 0);
 
     //
-    if (a === "Unknown") return 1;  // Push "Unknown" row to bottom
-    if (b === "Unknown") return -1; // Push "Unknown" row to bottom
+    if (a === "N/A") return 1;  // Push "Unknown" row to bottom
+    if (b === "N/A") return -1; // Push "Unknown" row to bottom
     return totalB - totalA;         // Otherwise, sort high to low
     //
   });
@@ -279,7 +279,7 @@ function App() {
 
   const mapInitialCenter = [41.88, -87.62]
   const mapInitialZoom = 10
-  const crownConditionValues = ["Good", "Fair", "Poor", "Dead", "Unknown"]
+  const crownConditionValues = ["Good", "Fair", "Poor", "Dead", "N/A"]
 
   // set up a useEffect hook to run a fetch of park names list any time the site reloads
   useEffect(() => {
