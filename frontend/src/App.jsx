@@ -97,49 +97,51 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
     <table>
       <thead>
         <tr>
-          {/* Main Entity Header Click */}
-          <th
-            // style={{ textTransform: 'capitalize', cursor: 'pointer' }}
-            style={{ textTransform: 'capitalize' }}
-            onClick={() => handleClick('main_header', { label: speciesKey })}
-          >
-            {speciesKey}
-          </th>
+          <th style={{ textTransform: 'capitalize' }}>{speciesKey}</th>
 
-          {/* Dynamic Column Header Click */}
-          {conditionsList.map((cond) => (
-            <th
-              key={cond}
-              style={{ cursor: 'pointer' }}
-              onClick={() => handleClick('column_header', { condition: cond })}
-            >
-              {cond}
-            </th>
-          ))}
+          {/* Column Header Click */}
+          {conditionsList.map((cond) => {
+            // Highlight entire column header if it's the active column filter
+            const isColumnActive = activeFilter?.type === 'column_header' && activeFilter?.condition === cond;
+            return (
+              <th
+                key={cond}
+                style={{
+                  cursor: 'pointer',
+                  backgroundColor: isColumnActive ? '#bbdefb' : 'transparent',
+                  transition: 'background-color 0.2s'
+                }}
+                onClick={() => handleClick('column_header', { condition: cond })}
+              >
+                {cond}
+              </th>
+            );
+          })}
 
-          {/* Total Column Header Click */}
-          <th
-            // style={{ cursor: 'pointer' }}
-            onClick={() => handleClick('total_header', { label: 'Row Totals' })}
-          >
-            Total
-          </th>
-          {/* <th style={{ textTransform: 'capitalize' }}>{speciesKey}</th>
-          {conditionsList.map((cond) => (
-            <th key={cond}>{cond}</th>
-          ))}
-          <th>Total</th> */}
+          <th>Total</th>
         </tr>
       </thead>
       <tbody>
         {speciesList.map((species) => {
-          const rowTotal = conditionsList.reduce((sum, cond) => {
-            return sum + (counts[species][cond] || 0);
-          }, 0);
+          // const rowTotal = conditionsList.reduce((sum, cond) => {
+          //   return sum + (counts[species][cond] || 0);
+          // }, 0);
+
+          const rowTotal = conditionsList.reduce((sum, cond) => sum + (counts[species][cond] || 0), 0);
+
+          // Check if this row is explicitly selected via row label clicking
+          const isRowActive = activeFilter?.type === 'row_label' && activeFilter?.species === species;
 
           return (
-            <tr key={species}>
-              {/* Row Label Click */}
+            <tr
+              key={species}
+              style={{
+                // Color the whole row if row label clicked, or keep transparent
+                backgroundColor: isRowActive ? '#e3f2fd' : 'transparent',
+                transition: 'background-color 0.2s'
+              }}
+            >
+              {/* Row Label */}
               <td
                 style={{ cursor: 'pointer', fontWeight: species === 'Unknown' ? 'italic' : 'normal' }}
                 onClick={() => handleClick('row_label', { species })}
@@ -148,28 +150,34 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
               </td>
 
               {/* Standard Data Cell Click */}
-              {conditionsList.map((cond) => (
-                <td
-                  key={cond}
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => handleClick('data_cell', { species, condition: cond, value: counts[species][cond] || 0 })}
-                >
-                  {counts[species][cond] || 0}
-                </td>
-              ))}
+              {conditionsList.map((cond) => {
+                // Highlight single cell if explicitly clicked, or if its container column/row is active
+                const isCellExplicitlyActive = activeFilter?.type === 'data_cell' && activeFilter?.species === species && activeFilter?.condition === cond;
+                const isCellPartiallyActive = (activeFilter?.type === 'row_label' && activeFilter?.species === species) || (activeFilter?.type === 'column_header' && activeFilter?.condition === cond);
 
-              {/* Row Total Cell Click */}
-              <td
-                // style={{ cursor: 'pointer' }}
-                onClick={() => handleClick('row_total_cell', { species, total: rowTotal })}
-              >
-                <strong>{rowTotal}</strong>
-              </td>
-              {/* <td>{species}</td>
-              {conditionsList.map((cond) => (
-                <td key={cond}>{counts[species][cond] || 0}</td>
-              ))}
-              <td><strong>{rowTotal}</strong></td> */}
+                let cellBg = 'transparent';
+                if (isCellExplicitlyActive) cellBg = '#90caf9'; // Stronger highlight for exact cell match
+                else if (isCellPartiallyActive) cellBg = '#f1f8ff'; // Subtle highlight for cross-section components
+
+                return (
+                  <td
+                    key={cond}
+                    style={{
+                      cursor: 'pointer',
+                      backgroundColor: cellBg,
+                      transition: 'background-color 0.2s'
+                    }}
+                    onClick={() => handleClick('data_cell', { species, condition: cond, value: counts[species][cond] || 0 })}
+                  >
+                    {counts[species][cond] || 0}
+                  </td>
+
+                );
+              })}
+
+              {/* Row Total */}
+              <td><strong>{rowTotal}</strong></td>
+
             </tr>
           );
         })}
