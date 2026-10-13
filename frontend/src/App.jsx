@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react"
+import React, { useEffect, useState, useRef, useMemo } from "react"
 import reactLogo from './assets/react.svg';
 import viteLogo from './assets/vite.svg';
 import heroImg from './assets/hero.png';
@@ -337,12 +337,17 @@ function App() {
   const [treesInParkData, setTreesInParkData] = useState(null)
   const [treesInParkDataloading, setTreesInParkDataLoading] = useState(true);
 
+  // Store the active filter constraint - filter trees in park by table click. null means "show everything"
+  const [activeFilter, setActiveFilter] = useState(null);
+
   const parkNameApiSafe = parkName ? parkName.replaceAll(" ", "+") : null
   const treesInParkEndpoint = parkNameApiSafe ? `${apiUrl}/trees-in-park/?name=${parkNameApiSafe}` : null
 
   const mapInitialCenter = [41.88, -87.62]
   const mapInitialZoom = 10
   const crownConditionValues = ["Good", "Fair", "Poor", "Dead", "N/A"]
+  const speciesKey = "common_name"
+  const conditionKey = "crown_condition"
 
   // set up a useEffect hook to run a fetch of park names list any time the site reloads
   useEffect(() => {
@@ -392,6 +397,62 @@ function App() {
   const treesInParkList = treesInParkData ? treesInParkData.features[0].properties.contained_trees.features : undefined
 
   console.log("number of tree inventory points in park: ", numTreesInPark)
+
+  //
+  // 1. Compute the filtered features dynamically based on table selections
+  const filteredFeatures = useMemo(() => {
+    if (!treesInParkList) return [];
+    if (!activeFilter) return treesInParkList;
+
+    return treesInParkList.filter((feature) => {
+      const props = feature.properties || {};
+      const intFeatureSpecies = props[speciesKey] || "Unknown";
+      const featureSpecies = intFeatureSpecies.startsWith("Unknown")
+        ? "N/A"
+        : intFeatureSpecies;
+      const featureCondition = props[conditionKey] || "N/A";
+
+      switch (activeFilter.type) {
+        case 'data_cell':
+          // Must match both row and column precisely
+          return featureSpecies === activeFilter.species && featureCondition === activeFilter.condition;
+        case 'row_label':
+          // Match all items in this row
+          return featureSpecies === activeFilter.species;
+        case 'column_header':
+          // Match all items in this column
+          return featureCondition === activeFilter.condition;
+        default:
+          return true;
+      }
+    });
+  }, [treesInParkList, activeFilter, speciesKey, conditionKey]);
+  //
+
+  // 2. Handle click events coming from the table
+  const handleTableClick = (clickEvent) => {
+    const { type } = clickEvent;
+
+    // Elements that are valid for spatial filtering
+    if (['data_cell', 'row_label', 'column_header'].includes(type)) {
+      setActiveFilter(clickEvent);
+    }
+  };
+
+  // 3. Helper layout string to describe the active filter state to users
+  const getFilterDescription = () => {
+    if (!activeFilter) return "Showing all features";
+    if (activeFilter.type === 'data_cell') {
+      return `Filtering for ${activeFilter.species} (${activeFilter.condition})`;
+    }
+    if (activeFilter.type === 'row_label') {
+      return `Filtering for all ${activeFilter.species}`;
+    }
+    if (activeFilter.type === 'column_header') {
+      return `Filtering for all items marked ${activeFilter.condition}`;
+    }
+    return "Filtered view";
+  };
 
   const uniqueItems = (list, keyFn) => list.reduce((resultSet, item) =>
     resultSet.add(typeof keyFn === 'string' ? item[keyFn] : keyFn(item)),
@@ -565,11 +626,24 @@ function App() {
         {treesInParkData && treeTypeUniqueCount !== 0 && (
           <GeoJsonSummaryTable
             features={treesInParkList}
-            speciesKey="common_name"
-            conditionKey="crown_condition"
+            speciesKey={speciesKey}
+            conditionKey={conditionKey}
             conditionValues={crownConditionValues}
+            onCellClick={handleTableClick}
           />
         )}
+        {/* Control / Breadcrumb Bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f5f5f5', padding: '10px 20px', borderRadius: '4px' }}>
+          <span><strong>Active Filter:</strong> {getFilterDescription()} ({filteredFeatures.length} visible)</span>
+          {activeFilter && (
+            <button
+              onClick={() => setActiveFilter(null)}
+              style={{ padding: '6px 12px', cursor: 'pointer', backgroundColor: '#e0e0e0', border: '1px solid #ccc', borderRadius: '4px' }}
+            >
+              Clear Filter
+            </button>
+          )}
+        </div>
         <MapContainer
           id="city-map"
           center={mapInitialCenter}
@@ -656,11 +730,22 @@ function App() {
               )}
             </LayersControl.Overlay>
 
-            <LayersControl.Overlay checked name="trees in park">
+            {/* <LayersControl.Overlay checked name="trees in park">
               {treesInParkGeoJson ? (
                 <GeoJSON
                   key={JSON.stringify(treesInParkGeoJson)}
                   data={treesInParkGeoJson}
+                  onEachFeature={setEachTree}
+                // onEachFeature={setAreaInteraction}
+
+                />
+              ) : null}
+            </LayersControl.Overlay> */}
+            <LayersControl.Overlay checked name="trees in park">
+              {treesInParkGeoJson ? (
+                <GeoJSON
+                  key={JSON.stringify(treesInParkGeoJson) + JSON.stringify(activeFilter)}
+                  data={{ type: "FeatureCollection", features: filteredFeatures }}
                   onEachFeature={setEachTree}
                 // onEachFeature={setAreaInteraction}
 
