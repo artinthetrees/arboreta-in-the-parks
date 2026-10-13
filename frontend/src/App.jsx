@@ -30,7 +30,7 @@ L.Icon.Default.mergeOptions({
 export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, conditionValues = false }) {
   if (!features || features.length === 0) return <p>No data available</p>;
 
-  // 1. Count items by looking inside the properties object
+  // Count items by looking inside the properties object
   const counts = features.reduce((acc, feature) => {
     const properties = feature.properties || {};
     const species = properties[speciesKey];
@@ -47,23 +47,10 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
     acc[finalSpecies][finalCondition] = (acc[finalSpecies][finalCondition] || 0) + 1;
     //
 
-    // if (species && condition) {
-    //   acc[species] = acc[species] || {};
-    //   acc[species][condition] = (acc[species][condition] || 0) + 1;
-    // }
     return acc;
   }, {});
 
   console.log("counts: ", counts)
-
-  // 2. Extract unique conditions dynamically for columns
-  // const conditionsList = conditionValues ? conditionValues : Array.from(
-  //   new Set(
-  //     features
-  //       .map((feature) => feature.properties?.[conditionKey])
-  //       .filter(Boolean)
-  //   )
-  // );
 
   //
   const conditionsList = conditionValues ? conditionValues : Array.from(
@@ -75,7 +62,7 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
   console.log("conditionsList: ", conditionsList)
   //
 
-  // 3. Pre-calculate row totals and sort species descending
+  // Pre-calculate row totals and sort species descending
   const speciesList = Object.keys(counts).sort((a, b) => {
     const totalA = conditionsList.reduce((sum, cond) => sum + (counts[a][cond] || 0), 0);
     const totalB = conditionsList.reduce((sum, cond) => sum + (counts[b][cond] || 0), 0);
@@ -85,8 +72,6 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
     if (b === "Unknown") return -1; // Push "Unknown" row to bottom
     return totalB - totalA;         // Otherwise, sort high to low
     //
-
-    // return totalB - totalA; // High to low
   });
 
   console.log("speciesList: ", speciesList)
@@ -100,14 +85,6 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
     return acc;
   }, {});
   //
-
-  // const grandTotal = features.length;
-  // const columnTotals = conditionsList.reduce((acc, cond) => {
-  //   acc[cond] = features.filter(
-  //     (feature) => feature.properties?.[conditionKey] === cond
-  //   ).length;
-  //   return acc;
-  // }, {});
 
   return (
     <table>
@@ -147,87 +124,6 @@ export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, condit
     </table>
   );
 }
-
-
-// // Reusable component accepting GeoJSON features array and property keys
-// export function GeoJsonSummaryTable({ features, speciesKey, conditionKey }) {
-//   // Guard clause for empty or missing features
-//   if (!features || features.length === 0) return <p>No data available</p>;
-
-//   // Count items by looking inside the properties object
-//   const counts = features.reduce((acc, feature) => {
-//     const properties = feature.properties || {};
-//     const species = properties[speciesKey];
-//     const condition = properties[conditionKey];
-
-//     if (species && condition) {
-//       acc[species] = acc[species] || {};
-//       acc[species][condition] = (acc[species][condition] || 0) + 1;
-//     }
-//     return acc;
-//   }, {});
-
-//   const speciesList = Object.keys(counts);
-
-//   // Extract unique conditions dynamically from properties
-//   const conditionsList = Array.from(
-//     new Set(
-//       features
-//         .map((feature) => feature.properties?.[conditionKey])
-//         .filter(Boolean)
-//     )
-//   );
-
-//   const grandTotal = features.length;
-
-//   // Calculate column totals dynamically from properties
-//   const columnTotals = conditionsList.reduce((acc, cond) => {
-//     acc[cond] = features.filter(
-//       (feature) => feature.properties?.[conditionKey] === cond
-//     ).length;
-//     return acc;
-//   }, {});
-
-//   return (
-//     <table>
-//       <thead>
-//         <tr>
-//           {/* Capitalizes the first letter of your species key for the header */}
-//           <th style={{ textTransform: 'capitalize' }}>{speciesKey}</th>
-//           {conditionsList.map((cond) => (
-//             <th key={cond}>{cond}</th>
-//           ))}
-//           <th>Total</th>
-//         </tr>
-//       </thead>
-//       <tbody>
-//         {speciesList.map((species) => {
-//           const rowTotal = conditionsList.reduce((sum, cond) => {
-//             return sum + (counts[species][cond] || 0);
-//           }, 0);
-
-//           return (
-//             <tr key={species}>
-//               <td>{species}</td>
-//               {conditionsList.map((cond) => (
-//                 <td key={cond}>{counts[species][cond] || 0}</td>
-//               ))}
-//               <td><strong>{rowTotal}</strong></td>
-//             </tr>
-//           );
-//         })}
-//         <tr>
-//           <td><strong>Total</strong></td>
-//           {conditionsList.map((cond) => (
-//             <td key={cond}><strong>{columnTotals[cond]}</strong></td>
-//           ))}
-//           <td><strong>{grandTotal}</strong></td>
-//         </tr>
-//       </tbody>
-//     </table>
-//   );
-// }
-
 
 function ParkSelect({ setFilterVal, parkNames = [] }) {
   const handleInputChange = (e) => {
@@ -333,41 +229,6 @@ function ZoomTracker({ setConstZoom }) {
     </div>
   );
 }
-
-// // Receives setConstZoom directly as a prop
-// function ZoomTracker({ setConstZoom }) {
-//   const map = useMapEvents({
-//     zoomend: () => {
-//       const currentZoom = map.getZoom();
-//       setZoomLevel(currentZoom);
-//       setConstZoom(currentZoom); // Updates the const in the parent component
-//     }
-//   });
-
-//   // Track local display state initialized to the map's default zoom
-//   const [zoomLevel, setZoomLevel] = useState(() => map.getZoom());
-
-//   // Syncs the initial default map zoom to the parent const on load
-//   useEffect(() => {
-//     setConstZoom(map.getZoom());
-//   }, [map, setConstZoom]);
-
-//   return (
-//     <div style={{
-//       position: 'absolute',
-//       bottom: '20px',
-//       left: '20px',
-//       zIndex: 1000,
-//       background: 'white',
-//       padding: '8px 12px',
-//       borderRadius: '4px',
-//       boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
-//       fontWeight: 'bold'
-//     }}>
-//       Current Zoom: {zoomLevel}
-//     </div>
-//   );
-// }
 
 function ValueCountsTable({ data }) {
   const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
