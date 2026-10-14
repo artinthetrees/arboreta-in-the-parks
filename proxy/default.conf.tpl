@@ -9,7 +9,7 @@ server {
     server_name ${CUSTOM_DOMAIN} ${CUSTOM_DEV_DOMAIN};
 
     # Global check: If the header is missing or incorrect, drop the request
-    if ($http_x_origin_verify != {CLOUDFRONT_SECRET_TOKEN}) {
+    if ($http_x_origin_verify != ${CLOUDFRONT_SECRET_TOKEN}) {
         return 444; 
     }
 
