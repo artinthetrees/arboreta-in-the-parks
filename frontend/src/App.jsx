@@ -619,7 +619,7 @@ function App() {
           <ul className="centered-list">
             <li>Horner (Henry)</li>
             <li>Independence</li>
-            <li>Wicker (Charles, Joel)</li>
+            <li>Humboldt (Baron Von)</li>
           </ul>
         </div>
         <ParkSelect filterVal={parkName} setFilterVal={setParkName} parkNames={parkNames} />
