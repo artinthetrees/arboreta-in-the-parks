@@ -40,6 +40,10 @@ services:
       - 443:8443
     volumes:
       - static-data:/vol/static
+    # environment:
+    #  - CLOUDFRONT_SECRET_TOKEN=${CLOUDFRONT_SECRET_TOKEN}
+    #  - CUSTOM_DOMAIN=${CUSTOM_DOMAIN}
+    #  - CUSTOM_DEV_DOMAIN=${CUSTOM_DEV_DOMAIN}
 
 volumes:
   # CHANGED: Removed postgres-data from this section since it's now managed via the host file system directly
