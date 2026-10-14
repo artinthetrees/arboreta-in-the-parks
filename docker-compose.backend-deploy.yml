@@ -21,9 +21,9 @@ services:
     image: postgis/postgis
     restart: always
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-      # # CHANGED: Replaced the named volume with the absolute path to your EBS volume mount point
-      # - /mnt/postgres_data:/var/lib/postgresql/data
+      # - postgres-data:/var/lib/postgresql/data
+      # CHANGED: Replaced the named volume with the absolute path to your EBS volume mount point
+      - /mnt/postgres_data/data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
@@ -40,8 +40,12 @@ services:
       - 443:8443
     volumes:
       - static-data:/vol/static
+    environment:
+     - CLOUDFRONT_SECRET_TOKEN=${CLOUDFRONT_SECRET_TOKEN}
+     - CUSTOM_DOMAIN=${CUSTOM_DOMAIN}
+     - CUSTOM_DEV_DOMAIN=${CUSTOM_DEV_DOMAIN}
 
 volumes:
   # CHANGED: Removed postgres-data from this section since it's now managed via the host file system directly
-  postgres-data:
+  # postgres-data:
   static-data:

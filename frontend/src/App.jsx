@@ -1,11 +1,11 @@
-import React, { useEffect, useState, useRef } from "react"
+import React, { useEffect, useState, useRef, useMemo } from "react"
 import reactLogo from './assets/react.svg';
 import viteLogo from './assets/vite.svg';
 import heroImg from './assets/hero.png';
 import sandyStream from './assets/sandystream.png'
 import './App.css';
 
-import { MapContainer, TileLayer, LayersControl, Marker, Popup, useMap, useMapEvents, GeoJSON, FeatureGroup, Polygon } from "react-leaflet"
+import { MapContainer, WMSTileLayer, TileLayer, LayersControl, Marker, Popup, useMap, useMapEvents, GeoJSON, FeatureGroup, Polygon, LayerGroup } from "react-leaflet"
 import L from 'leaflet';
 
 import 'leaflet/dist/leaflet.css';
@@ -27,213 +27,256 @@ L.Icon.Default.mergeOptions({
 
 //
 
-export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, conditionValues = false }) {
+export function GeoJsonSummaryTable({ features, speciesKey, conditionKey, conditionValues = false, onCellClick, activeFilter }) {
   if (!features || features.length === 0) return <p>No data available</p>;
 
-  // 1. Count items by looking inside the properties object
+  // Count items by looking inside the properties object
   const counts = features.reduce((acc, feature) => {
     const properties = feature.properties || {};
     const species = properties[speciesKey];
     const condition = properties[conditionKey];
 
-    if (species && condition) {
-      acc[species] = acc[species] || {};
-      acc[species][condition] = (acc[species][condition] || 0) + 1;
-    }
+    //
+    const intSpecies = species || "Unknown";
+    const finalSpecies = intSpecies.startsWith("Unknown")
+      ? "N/A"
+      : intSpecies;
+    const finalCondition = condition || "N/A";
+
+    acc[finalSpecies] = acc[finalSpecies] || {};
+    acc[finalSpecies][finalCondition] = (acc[finalSpecies][finalCondition] || 0) + 1;
+    //
+
     return acc;
   }, {});
 
   console.log("counts: ", counts)
 
-  // 2. Extract unique conditions dynamically for columns
+  //
   const conditionsList = conditionValues ? conditionValues : Array.from(
     new Set(
-      features
-        .map((feature) => feature.properties?.[conditionKey])
-        .filter(Boolean)
+      features.map((feature) => feature.properties?.[conditionKey] || "N/A")
     )
   );
 
-  // 3. Pre-calculate row totals and sort species descending
+  console.log("conditionsList: ", conditionsList)
+  //
+
+  // Pre-calculate row totals and sort species descending
   const speciesList = Object.keys(counts).sort((a, b) => {
     const totalA = conditionsList.reduce((sum, cond) => sum + (counts[a][cond] || 0), 0);
     const totalB = conditionsList.reduce((sum, cond) => sum + (counts[b][cond] || 0), 0);
-    return totalB - totalA; // High to low
+
+    //
+    if (a === "N/A") return 1;  // Push "Unknown" row to bottom
+    if (b === "N/A") return -1; // Push "Unknown" row to bottom
+    return totalB - totalA;         // Otherwise, sort high to low
+    //
   });
 
-  const grandTotal = features.length;
+  console.log("speciesList: ", speciesList)
 
+  //
+  let grandTotal = 0;
   const columnTotals = conditionsList.reduce((acc, cond) => {
-    acc[cond] = features.filter(
-      (feature) => feature.properties?.[conditionKey] === cond
-    ).length;
+    const totalForCond = speciesList.reduce((sum, species) => sum + (counts[species][cond] || 0), 0);
+    acc[cond] = totalForCond;
+    grandTotal += totalForCond;
     return acc;
   }, {});
+  //
+
+  // Helper function to safely execute callback if provided
+  const handleClick = (type, details) => {
+    if (typeof onCellClick === 'function') {
+      onCellClick({ type, ...details });
+    }
+  };
 
   return (
     <table>
       <thead>
         <tr>
           <th style={{ textTransform: 'capitalize' }}>{speciesKey}</th>
-          {conditionsList.map((cond) => (
-            <th key={cond}>{cond}</th>
-          ))}
+
+          {/* Column Header Click */}
+          {conditionsList.map((cond) => {
+            // Highlight entire column header if it's the active column filter
+            const isColumnActive = activeFilter?.type === 'column_header' && activeFilter?.condition === cond;
+            return (
+              <th
+                key={cond}
+                style={{
+                  cursor: 'pointer',
+                  backgroundColor: isColumnActive ? '#bbdefb' : 'transparent',
+                  transition: 'background-color 0.2s'
+                }}
+                onClick={() => handleClick('column_header', { condition: cond })}
+              >
+                {cond}
+              </th>
+            );
+          })}
+
           <th>Total</th>
         </tr>
       </thead>
       <tbody>
         {speciesList.map((species) => {
-          const rowTotal = conditionsList.reduce((sum, cond) => {
-            return sum + (counts[species][cond] || 0);
-          }, 0);
+          // const rowTotal = conditionsList.reduce((sum, cond) => {
+          //   return sum + (counts[species][cond] || 0);
+          // }, 0);
+
+          const rowTotal = conditionsList.reduce((sum, cond) => sum + (counts[species][cond] || 0), 0);
+
+          // Check if this row is explicitly selected via row label clicking
+          const isRowActive = activeFilter?.type === 'row_label' && activeFilter?.species === species;
 
           return (
-            <tr key={species}>
-              <td>{species}</td>
-              {conditionsList.map((cond) => (
-                <td key={cond}>{counts[species][cond] || 0}</td>
-              ))}
+            <tr
+              key={species}
+              style={{
+                // Color the whole row if row label clicked, or keep transparent
+                backgroundColor: isRowActive ? '#e3f2fd' : 'transparent',
+                transition: 'background-color 0.2s'
+              }}
+            >
+              {/* Row Label */}
+              <td
+                style={{ cursor: 'pointer', fontWeight: species === 'Unknown' ? 'italic' : 'normal' }}
+                onClick={() => handleClick('row_label', { species })}
+              >
+                {species}
+              </td>
+
+              {/* Standard Data Cell Click */}
+              {conditionsList.map((cond) => {
+                // Highlight single cell if explicitly clicked, or if its container column/row is active
+                const isCellExplicitlyActive = activeFilter?.type === 'data_cell' && activeFilter?.species === species && activeFilter?.condition === cond;
+                const isCellPartiallyActive = (activeFilter?.type === 'row_label' && activeFilter?.species === species) || (activeFilter?.type === 'column_header' && activeFilter?.condition === cond);
+
+                let cellBg = 'transparent';
+                if (isCellExplicitlyActive) cellBg = '#90caf9'; // Stronger highlight for exact cell match
+                else if (isCellPartiallyActive) cellBg = '#f1f8ff'; // Subtle highlight for cross-section components
+
+                return (
+                  <td
+                    key={cond}
+                    style={{
+                      cursor: 'pointer',
+                      backgroundColor: cellBg,
+                      transition: 'background-color 0.2s'
+                    }}
+                    onClick={() => handleClick('data_cell', { species, condition: cond, value: counts[species][cond] || 0 })}
+                  >
+                    {counts[species][cond] || 0}
+                  </td>
+
+                );
+              })}
+
+              {/* Row Total */}
               <td><strong>{rowTotal}</strong></td>
+
             </tr>
           );
         })}
         <tr>
-          <td><strong>Total</strong></td>
+          {/* Bottom Left Total Label Click */}
+          <td
+            // style={{ cursor: 'pointer' }}
+            onClick={() => handleClick('footer_label', { label: 'Total' })}
+          >
+            <strong>Total</strong>
+          </td>
+
+          {/* Column Total Cell Click */}
+          {conditionsList.map((cond) => (
+            <td
+              key={cond}
+              // style={{ cursor: 'pointer' }}
+              onClick={() => handleClick('column_total_cell', { condition: cond, total: columnTotals[cond] })}
+            >
+              <strong>{columnTotals[cond]}</strong>
+            </td>
+          ))}
+
+          {/* Grand Total Cell Click */}
+          <td
+            // style={{ cursor: 'pointer' }}
+            onClick={() => handleClick('grand_total_cell', { total: grandTotal })}
+          >
+            <strong>{grandTotal}</strong>
+          </td>
+          {/* <td><strong>Total</strong></td>
           {conditionsList.map((cond) => (
             <td key={cond}><strong>{columnTotals[cond]}</strong></td>
           ))}
-          <td><strong>{grandTotal}</strong></td>
+          <td><strong>{grandTotal}</strong></td> */}
         </tr>
       </tbody>
     </table>
   );
 }
 
+function ParkSelect({ setFilterVal, parkNames = [] }) {
+  const handleInputChange = (e) => {
+    const inputValue = e.target.value;
 
-// // Reusable component accepting GeoJSON features array and property keys
-// export function GeoJsonSummaryTable({ features, speciesKey, conditionKey }) {
-//   // Guard clause for empty or missing features
-//   if (!features || features.length === 0) return <p>No data available</p>;
+    // Allow the user to clear the input field entirely
+    if (inputValue === "") {
+      setFilterVal("");
+      return;
+    }
 
-//   // Count items by looking inside the properties object
-//   const counts = features.reduce((acc, feature) => {
-//     const properties = feature.properties || {};
-//     const species = properties[speciesKey];
-//     const condition = properties[conditionKey];
+    // Check if the typed value matches a valid park name
+    const isValidPark = parkNames.some(dict => dict.name === inputValue);
 
-//     if (species && condition) {
-//       acc[species] = acc[species] || {};
-//       acc[species][condition] = (acc[species][condition] || 0) + 1;
-//     }
-//     return acc;
-//   }, {});
-
-//   const speciesList = Object.keys(counts);
-
-//   // Extract unique conditions dynamically from properties
-//   const conditionsList = Array.from(
-//     new Set(
-//       features
-//         .map((feature) => feature.properties?.[conditionKey])
-//         .filter(Boolean)
-//     )
-//   );
-
-//   const grandTotal = features.length;
-
-//   // Calculate column totals dynamically from properties
-//   const columnTotals = conditionsList.reduce((acc, cond) => {
-//     acc[cond] = features.filter(
-//       (feature) => feature.properties?.[conditionKey] === cond
-//     ).length;
-//     return acc;
-//   }, {});
-
-//   return (
-//     <table>
-//       <thead>
-//         <tr>
-//           {/* Capitalizes the first letter of your species key for the header */}
-//           <th style={{ textTransform: 'capitalize' }}>{speciesKey}</th>
-//           {conditionsList.map((cond) => (
-//             <th key={cond}>{cond}</th>
-//           ))}
-//           <th>Total</th>
-//         </tr>
-//       </thead>
-//       <tbody>
-//         {speciesList.map((species) => {
-//           const rowTotal = conditionsList.reduce((sum, cond) => {
-//             return sum + (counts[species][cond] || 0);
-//           }, 0);
-
-//           return (
-//             <tr key={species}>
-//               <td>{species}</td>
-//               {conditionsList.map((cond) => (
-//                 <td key={cond}>{counts[species][cond] || 0}</td>
-//               ))}
-//               <td><strong>{rowTotal}</strong></td>
-//             </tr>
-//           );
-//         })}
-//         <tr>
-//           <td><strong>Total</strong></td>
-//           {conditionsList.map((cond) => (
-//             <td key={cond}><strong>{columnTotals[cond]}</strong></td>
-//           ))}
-//           <td><strong>{grandTotal}</strong></td>
-//         </tr>
-//       </tbody>
-//     </table>
-//   );
-// }
-
-
-function ParkSelect({ setFilterVal, parkNames }) {
-  // Set parkName using user selection from dropdown of list of all parkNames
-  const parkNamesList = parkNames.map(dict => dict.name);
-
-  const options = parkNamesList.map((parkName) => {
-    return (
-      <option value={parkName} key={parkName}>
-        {parkName}
-      </option>
-    )
-  })
+    // Only pass it up to the parent if it's a real match
+    if (isValidPark) {
+      setFilterVal(inputValue);
+    }
+  };
 
   return (
     <>
       <label htmlFor="parkSelect" className="fs-3">
-        Filter by park:{" "}
+        <b>Filter by park:</b>{" "}
       </label>
-      <select
+
+      <input
+        list="parkOptions"
         id="parkSelect"
-        className="form-select form-select-lg mb-3"
-        onChange={(e) => setFilterVal(e.target.value)}
-      >
-        {options}
-      </select>
+        className="form-control form-control-lg mb-3"
+        placeholder="Type to search parks..."
+        onChange={handleInputChange}
+      />
+
+      <datalist id="parkOptions">
+        {parkNames.map((dict) => (
+          <option value={dict.name} key={dict.name} />
+        ))}
+      </datalist>
     </>
-  )
+  );
 }
 
-// Internal component to handle map movement after data loads
+// 2. AUTO-ZOOM TO GEOJSON
 function ZoomToGeoJSON({ geoJsonData }) {
   const map = useMap();
   const geoJsonRef = useRef(null);
 
   useEffect(() => {
     if (geoJsonData && geoJsonRef.current) {
-      // Extract boundary coordinates from the processed GeoJSON layer
       const bounds = geoJsonRef.current.getBounds();
-
-      // Auto-zoom with a pixel padding buffer around the shapes
       if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [50, 50] });
+        // Added animate: false to make the view update instant
+        map.fitBounds(bounds, { padding: [50, 50], animate: false });
       }
     }
   }, [map, geoJsonData]);
+
+  if (!geoJsonData) return null;
 
   return (
     <GeoJSON
@@ -244,50 +287,40 @@ function ZoomToGeoJSON({ geoJsonData }) {
   );
 }
 
-// 1. Create a child component inside MapContainer
-function ZoomTracker({ mapInitialZoom }) {
-  const [zoomLevel, setZoomLevel] = useState(mapInitialZoom); // initial zoom
 
-  const map = useMapEvents({
-    zoomend: () => {
-      setZoomLevel(map.getZoom()); // Get current zoom level
-    },
-  });
+function ZoomTracker({ setConstZoom }) {
+  const map = useMap();
+  const [zoomLevel, setZoomLevel] = useState(() => map.getZoom());
+
+  useEffect(() => {
+    if (!map) return;
+
+    // Force update when any zoom or movement ends (manual or programmatic)
+    const handleZoom = () => {
+      const currentZoom = map.getZoom();
+      setZoomLevel(currentZoom);
+      setConstZoom(currentZoom);
+    };
+
+    map.on('zoomend moveend', handleZoom);
+
+    // Sync initial zoom immediately on mount
+    handleZoom();
+
+    // Clean up event listeners on unmount
+    return () => {
+      map.off('zoomend moveend', handleZoom);
+    };
+  }, [map, setConstZoom]);
 
   return (
     <div style={{
-      position: 'absolute',
-      top: 10,
-      left: 50,
-      zIndex: 1000,
-      background: 'white',
-      padding: '5px'
+      position: 'absolute', bottom: '20px', left: '20px', zIndex: 1000,
+      background: 'white', padding: '8px 12px', borderRadius: '4px',
+      boxShadow: '0 2px 5px rgba(0,0,0,0.3)', fontWeight: 'bold'
     }}>
       Current Zoom: {zoomLevel}
     </div>
-  );
-}
-
-function ValueCountsTable({ data }) {
-  const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
-
-  return (
-    <table>
-      <thead>
-        <tr>
-          <th>Item</th>
-          <th>Count</th>
-        </tr>
-      </thead>
-      <tbody>
-        {entries.map(([key, value]) => (
-          <tr key={key}>
-            <td>{key}</td>
-            <td>{value}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
   );
 }
 
@@ -304,16 +337,25 @@ function App() {
     console.log('Running in development mode');
   }
 
+  const [constZoom, setConstZoom] = useState(null);
+
   const [parkNames, setParkNames] = useState([])
+
   const [parkName, setParkName] = useState(null)
   const [treesInParkData, setTreesInParkData] = useState(null)
+  const [treesInParkDataloading, setTreesInParkDataLoading] = useState(true);
+
+  // Store the active filter constraint - filter trees in park by table click. null means "show everything"
+  const [activeFilter, setActiveFilter] = useState(null);
 
   const parkNameApiSafe = parkName ? parkName.replaceAll(" ", "+") : null
   const treesInParkEndpoint = parkNameApiSafe ? `${apiUrl}/trees-in-park/?name=${parkNameApiSafe}` : null
 
   const mapInitialCenter = [41.88, -87.62]
   const mapInitialZoom = 10
-  const crownConditionValues = ["Good", "Fair", "Poor", "Dead"]
+  const crownConditionValues = ["Good", "Fair", "Poor", "Dead", "N/A"]
+  const speciesKey = "common_name"
+  const conditionKey = "crown_condition"
 
   // set up a useEffect hook to run a fetch of park names list any time the site reloads
   useEffect(() => {
@@ -345,8 +387,12 @@ function App() {
       .then((data) => {
         // console.log('Data:', data);
         setTreesInParkData(data);
+        setTreesInParkDataLoading(false)
       })
-      .catch(error => console.error('Error:', error)); // Log errors
+      .catch((err) => {
+        console.error('Error:', err);
+        setTreesInParkDataLoading(false);
+      });
   }, [treesInParkEndpoint])
 
   // parkName set by user selection from dropdown  
@@ -359,6 +405,62 @@ function App() {
   const treesInParkList = treesInParkData ? treesInParkData.features[0].properties.contained_trees.features : undefined
 
   console.log("number of tree inventory points in park: ", numTreesInPark)
+
+  //
+  // 1. Compute the filtered features dynamically based on table selections
+  const filteredFeatures = useMemo(() => {
+    if (!treesInParkList) return [];
+    if (!activeFilter) return treesInParkList;
+
+    return treesInParkList.filter((feature) => {
+      const props = feature.properties || {};
+      const intFeatureSpecies = props[speciesKey] || "Unknown";
+      const featureSpecies = intFeatureSpecies.startsWith("Unknown")
+        ? "N/A"
+        : intFeatureSpecies;
+      const featureCondition = props[conditionKey] || "N/A";
+
+      switch (activeFilter.type) {
+        case 'data_cell':
+          // Must match both row and column precisely
+          return featureSpecies === activeFilter.species && featureCondition === activeFilter.condition;
+        case 'row_label':
+          // Match all items in this row
+          return featureSpecies === activeFilter.species;
+        case 'column_header':
+          // Match all items in this column
+          return featureCondition === activeFilter.condition;
+        default:
+          return true;
+      }
+    });
+  }, [treesInParkList, activeFilter, speciesKey, conditionKey]);
+  //
+
+  // 2. Handle click events coming from the table
+  const handleTableClick = (clickEvent) => {
+    const { type } = clickEvent;
+
+    // Elements that are valid for spatial filtering
+    if (['data_cell', 'row_label', 'column_header'].includes(type)) {
+      setActiveFilter(clickEvent);
+    }
+  };
+
+  // 3. Helper layout string to describe the active filter state to users
+  const getFilterDescription = () => {
+    if (!activeFilter) return "Showing all features";
+    if (activeFilter.type === 'data_cell') {
+      return `Filtering for ${activeFilter.species} (${activeFilter.condition})`;
+    }
+    if (activeFilter.type === 'row_label') {
+      return `Filtering for all ${activeFilter.species}`;
+    }
+    if (activeFilter.type === 'column_header') {
+      return `Filtering for all items marked ${activeFilter.condition}`;
+    }
+    return "Filtered view";
+  };
 
   const uniqueItems = (list, keyFn) => list.reduce((resultSet, item) =>
     resultSet.add(typeof keyFn === 'string' ? item[keyFn] : keyFn(item)),
@@ -505,6 +607,20 @@ function App() {
         <div>
           {/* <h1>Arboreta in the Parks</h1> */}
           <h1>{appTitle}</h1>
+          <p className="fs-4">
+            A web application to help Chicago Park District Park Stewards attain and maintain arboretum status at their park. It tracks progress towards identification of 25 unique tree types as necessary to apply for arboretum status and maintenance of these trees in good conditions, and provides a publicly available map of park trees by type.
+          </p>
+          <p className="fs-4">
+            Not all parks currently have trees inventoried.
+          </p>
+          <p className="fs-4">
+            <b>Check out a few parks that are currently going for arboretum status and have at least some trees inventoried:</b>
+          </p>
+          <ul className="centered-list">
+            <li>Horner (Henry)</li>
+            <li>Independence</li>
+            <li>Humboldt (Baron Von)</li>
+          </ul>
         </div>
         <ParkSelect filterVal={parkName} setFilterVal={setParkName} parkNames={parkNames} />
         {/* <p className="fs-4">
@@ -515,50 +631,88 @@ function App() {
             <b>Number of unique tree types identified in this park:</b> {treeTypeUniqueCount}
           </p>
         )}
-        {/* {treesInParkData && treeTypeUniqueCount !== 0 && (
-          <ValueCountsTable
-            data={treeTypeValueCounts}
-          />
-        )} */}
         {treesInParkData && treeTypeUniqueCount !== 0 && (
           <GeoJsonSummaryTable
             features={treesInParkList}
-            speciesKey="common_name"
-            conditionKey="crown_condition"
+            speciesKey={speciesKey}
+            conditionKey={conditionKey}
             conditionValues={crownConditionValues}
+            onCellClick={handleTableClick}
+            activeFilter={activeFilter}
           />
         )}
+        {/* Control / Breadcrumb Bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f5f5f5', padding: '10px 20px', borderRadius: '4px' }}>
+          <span><strong>Active Filter:</strong> {getFilterDescription()} ({filteredFeatures.length} visible)</span>
+          {activeFilter && (
+            <button
+              onClick={() => setActiveFilter(null)}
+              style={{ padding: '6px 12px', cursor: 'pointer', backgroundColor: '#e0e0e0', border: '1px solid #ccc', borderRadius: '4px' }}
+            >
+              Clear Filter
+            </button>
+          )}
+        </div>
         <MapContainer
           id="city-map"
           center={mapInitialCenter}
           zoom={mapInitialZoom}
+          maxZoom={23}
         >
           <LayersControl position="topright">
 
-            {/* Default Base Map */}
+
+            {/* Open Street Map */}
             <LayersControl.BaseLayer name="OpenStreetMap">
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png"
+                // url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png"
+                url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                maxZoom={23}       /* Matches the MapContainer maxZoom to allow deeper zooming */
+                maxNativeZoom={18}
               />
             </LayersControl.BaseLayer>
 
-            {/* Base Layer: Esri Satellite */}
-            <LayersControl.BaseLayer checked name="Satellite (Esri)">
+            {/* Esri Satellite */}
+            <LayersControl.BaseLayer name="Satellite (Esri)">
               <TileLayer
                 url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                maxZoom={23}       /* Matches the MapContainer maxZoom to allow deeper zooming */
+                maxNativeZoom={18}
                 attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
               />
             </LayersControl.BaseLayer>
 
+            {/* Google Satellite */}
+            <LayersControl.BaseLayer checked name="Satellite (Google)">
+              <LayerGroup>
+                {/* Base Satellite Imagery */}
+                <TileLayer
+                  url='https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
+                  maxZoom={23}
+                  maxNativeZoom={20}
+                  subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+                  attribution="&copy; Google Maps"
+                />
+                {/* Transparent Hybrid Overlay (Labels, Boundaries & Roads) */}
+                <TileLayer
+                  url="https://{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}"
+                  subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+                  maxZoom={23}
+                  maxNativeZoom={20}
+                />
+              </LayerGroup>
+
+            </LayersControl.BaseLayer>
+
             {/* Alternative Base Map */}
-            <LayersControl.BaseLayer name="CartoDB Light">
+            {/* <LayersControl.BaseLayer name="CartoDB Light">
               <TileLayer
                 attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 subdomains='abcd'
               />
-            </LayersControl.BaseLayer>
+            </LayersControl.BaseLayer> */}
 
             {/* <LayersControl.Overlay name="CA with counts">
               {currentYearData.length > 0 ? (
@@ -585,7 +739,7 @@ function App() {
               )}
             </LayersControl.Overlay>
 
-            <LayersControl.Overlay checked name="trees in park">
+            {/* <LayersControl.Overlay checked name="trees in park">
               {treesInParkGeoJson ? (
                 <GeoJSON
                   key={JSON.stringify(treesInParkGeoJson)}
@@ -595,9 +749,20 @@ function App() {
 
                 />
               ) : null}
+            </LayersControl.Overlay> */}
+            <LayersControl.Overlay checked name="trees in park">
+              {treesInParkGeoJson ? (
+                <GeoJSON
+                  key={JSON.stringify(treesInParkGeoJson) + JSON.stringify(activeFilter)}
+                  data={{ type: "FeatureCollection", features: filteredFeatures }}
+                  onEachFeature={setEachTree}
+                // onEachFeature={setAreaInteraction}
+
+                />
+              ) : null}
             </LayersControl.Overlay>
 
-            <ZoomTracker mapInitialZoom={mapInitialZoom} />
+            <ZoomTracker setConstZoom={setConstZoom} />
 
           </LayersControl>
         </MapContainer>
